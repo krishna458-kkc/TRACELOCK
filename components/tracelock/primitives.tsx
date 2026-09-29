@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, Copy } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { groupHex, truncateHash } from '@/lib/format'
@@ -89,6 +89,82 @@ export function Panel({
   )
 }
 
+export function StaggerText({ text, className }: { text: string; className?: string }) {
+  const words = text.split(' ')
+  return (
+    <span className={cn('inline-flex flex-wrap gap-x-1.5', className)}>
+      {words.map((word, wordIndex) => (
+        <span key={wordIndex} className="inline-block whitespace-nowrap">
+          {Array.from(word).map((char, charIndex) => (
+            <span
+              key={charIndex}
+              className="animate-stagger-char"
+              style={{ animationDelay: `${(wordIndex * 5 + charIndex) * 20}ms` }}
+            >
+              {char}
+            </span>
+          ))}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+export function StatsCounter({
+  value,
+  duration = 800,
+  prefix = '',
+  suffix = '',
+  className,
+}: {
+  value: number
+  duration?: number
+  prefix?: string
+  suffix?: string
+  className?: string
+}) {
+  const [displayValue, setDisplayValue] = useState(0)
+  const prevValueRef = useRef(0)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplayValue(value)
+      return
+    }
+
+    const startValue = prevValueRef.current
+    const endValue = value
+    const startTime = performance.now()
+    let animationFrameId: number
+
+    const updateCounter = (currentTime: number) => {
+      const elapsed = currentTime - startTime
+      const progress = Math.min(elapsed / duration, 1)
+      const easeProgress = 1 - Math.pow(1 - progress, 3)
+      const currentVal = Math.round(startValue + (endValue - startValue) * easeProgress)
+
+      setDisplayValue(currentVal)
+
+      if (progress < 1) {
+        animationFrameId = requestAnimationFrame(updateCounter)
+      } else {
+        prevValueRef.current = endValue
+      }
+    }
+
+    animationFrameId = requestAnimationFrame(updateCounter)
+    return () => cancelAnimationFrame(animationFrameId)
+  }, [value, duration])
+
+  return (
+    <span className={cn('font-mono tabular-nums', className)}>
+      {prefix}
+      {displayValue}
+      {suffix}
+    </span>
+  )
+}
+
 export function PageHeader({
   eyebrow,
   title,
@@ -103,8 +179,13 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div className="max-w-3xl">
-        <p className="label-caps text-primary">{eyebrow}</p>
-        <h1 className="mt-1.5 text-2xl font-semibold tracking-tight text-balance">{title}</h1>
+        <p className="label-caps text-primary tracking-[0.18em] flex items-center gap-1.5">
+          <span className="inline-block size-1.5 rounded-full bg-primary animate-pulse" />
+          {eyebrow}
+        </p>
+        <h1 className="mt-1.5 text-2xl font-bold tracking-tight text-foreground text-balance">
+          <StaggerText text={title} />
+        </h1>
         {description && <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground text-pretty">{description}</p>}
       </div>
       {actions && <div className="flex items-center gap-2">{actions}</div>}
@@ -215,6 +296,76 @@ export function ClassificationTag({ value }: { value: string }) {
   )
 }
 
+export function GlassBlobCard({
+  tone = 'cyan',
+  children,
+  className,
+  innerClassName,
+  onClick,
+}: {
+  tone?: 'cyan' | 'emerald' | 'ruby' | 'purple'
+  children: React.ReactNode
+  className?: string
+  innerClassName?: string
+  onClick?: () => void
+}) {
+  const blob1Color =
+    tone === 'emerald'
+      ? 'oklch(0.76 0.14 158 / 0.22)'
+      : tone === 'ruby'
+        ? 'oklch(0.66 0.2 25 / 0.22)'
+        : tone === 'purple'
+          ? 'oklch(0.65 0.18 300 / 0.22)'
+          : 'oklch(0.76 0.11 222 / 0.22)'
+
+  const blob2Color =
+    tone === 'emerald'
+      ? 'oklch(0.76 0.11 222 / 0.18)'
+      : tone === 'ruby'
+        ? 'oklch(0.82 0.13 80 / 0.18)'
+        : 'oklch(0.76 0.14 158 / 0.18)'
+
+  return (
+    <div
+      onClick={onClick}
+      className={cn('tracelock-glass-blob-card group', className)}
+    >
+      <div
+        className="blob-element-1"
+        style={{ background: `radial-gradient(circle, ${blob1Color}, transparent 70%)` }}
+      />
+      <div
+        className="blob-element-2"
+        style={{ background: `radial-gradient(circle, ${blob2Color}, transparent 70%)` }}
+      />
+      <div className={cn('relative z-10 p-4', innerClassName)}>{children}</div>
+    </div>
+  )
+}
+
+export function GradientHoverCard({
+  children,
+  className,
+  innerClassName,
+  onClick,
+}: {
+  children: React.ReactNode
+  className?: string
+  innerClassName?: string
+  onClick?: () => void
+}) {
+  return (
+    <div
+      onClick={onClick}
+      className={cn('tracelock-gradient-card group', className)}
+    >
+      <div className={cn('tracelock-gradient-inner p-4', innerClassName)}>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 export function TraceCard({
   variant = 'default',
   tone = 'cyan',
@@ -224,7 +375,7 @@ export function TraceCard({
   children,
   onClick,
 }: {
-  variant?: 'default' | 'elevated' | 'rotating'
+  variant?: 'default' | 'elevated' | 'rotating' | 'blob' | 'gradient'
   tone?: 'cyan' | 'success' | 'danger'
   rotatingVariant?: 'cyan' | 'success' | 'danger'
   className?: string
@@ -247,12 +398,37 @@ export function TraceCard({
     )
   }
 
+  if (variant === 'blob') {
+    return (
+      <GlassBlobCard
+        tone={tone === 'success' ? 'emerald' : tone === 'danger' ? 'ruby' : 'cyan'}
+        className={className}
+        innerClassName={innerClassName}
+        onClick={onClick}
+      >
+        {children}
+      </GlassBlobCard>
+    )
+  }
+
+  if (variant === 'gradient') {
+    return (
+      <GradientHoverCard
+        className={className}
+        innerClassName={innerClassName}
+        onClick={onClick}
+      >
+        {children}
+      </GradientHoverCard>
+    )
+  }
+
   return (
     <div
       onClick={onClick}
       className={cn(
         'rounded-lg border border-border bg-card p-4 transition-all duration-200',
-        variant === 'elevated' && 'hover:border-primary/50 hover:shadow-sm',
+        variant === 'elevated' && 'hover:border-primary/50 hover:shadow-[0_0_16px_-4px_rgba(56,189,248,0.15)] hover:-translate-y-0.5',
         className,
       )}
     >
@@ -285,7 +461,7 @@ export function TraceButton({
   type?: 'button' | 'submit' | 'reset'
 }) {
   const base =
-    'relative inline-flex items-center justify-center gap-2 font-mono font-medium rounded-md transition-all duration-150 select-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 cursor-pointer'
+    'relative overflow-hidden inline-flex items-center justify-center gap-2 font-mono font-medium rounded-md transition-all duration-150 select-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 cursor-pointer group'
 
   const sizeClass =
     size === 'sm'
@@ -298,13 +474,13 @@ export function TraceButton({
 
   const variantClass = {
     primary:
-      'bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-[0_0_14px_rgba(56,189,248,0.25)] border border-primary/60',
+      'bg-primary text-primary-foreground hover:bg-primary/95 hover:shadow-[0_0_18px_rgba(56,189,248,0.35)] border border-primary/70 hover:-translate-y-0.5',
     cyber:
-      'bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary hover:shadow-[0_0_16px_rgba(56,189,248,0.25)] border border-primary/40',
-    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border',
-    outline: 'border border-border/80 bg-background/60 hover:bg-secondary/50 hover:border-border text-foreground',
+      'bg-primary/10 text-primary hover:bg-primary/20 hover:border-primary hover:shadow-[0_0_16px_rgba(56,189,248,0.25)] border border-primary/40 hover:-translate-y-0.5',
+    secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border hover:border-primary/40 hover:-translate-y-0.5',
+    outline: 'border border-border/80 bg-background/60 hover:bg-secondary/50 hover:border-primary/50 text-foreground hover:-translate-y-0.5',
     destructive:
-      'bg-destructive/15 text-destructive border border-destructive/40 hover:bg-destructive/25 hover:shadow-[0_0_14px_rgba(239,68,68,0.25)]',
+      'bg-destructive/15 text-destructive border border-destructive/40 hover:bg-destructive/25 hover:shadow-[0_0_16px_rgba(239,68,68,0.35)] hover:-translate-y-0.5',
     ghost: 'hover:bg-secondary/60 text-muted-foreground hover:text-foreground',
   }[normalizedVariant]
 
@@ -316,12 +492,13 @@ export function TraceButton({
       onClick={onClick}
       className={cn(base, sizeClass, variantClass, className)}
     >
+      <span className="button-shimmer-sweep" aria-hidden />
       {loading ? (
         <span className="size-3.5 border-2 border-current border-t-transparent rounded-full animate-spin mr-1" />
       ) : (
-        Icon && <Icon className="size-3.5 shrink-0" />
+        Icon && <Icon className="size-3.5 shrink-0 transition-transform duration-200 group-hover:scale-110" />
       )}
-      <span>{children}</span>
+      <span className="relative z-10">{children}</span>
     </button>
   )
 }

@@ -73,9 +73,10 @@ export function ForensicResultCard({
 
   if (isFailed) {
     return (
-      <section
-        aria-labelledby="attribution-heading"
-        className="animate-in fade-in slide-in-from-bottom-2 overflow-hidden rounded-lg border-2 border-destructive/60 bg-card/95 shadow-[0_0_24px_-4px_rgba(239,68,68,0.25)] duration-500"
+      <TraceCard
+        variant="rotating"
+        tone="danger"
+        className="animate-in fade-in slide-in-from-bottom-2 duration-500 shadow-[0_0_24px_-4px_rgba(239,68,68,0.25)]"
       >
         <header className="flex items-center justify-between gap-4 border-b border-destructive/40 bg-destructive/15 px-5 py-4">
           <div className="flex items-center gap-3">
@@ -170,7 +171,7 @@ export function ForensicResultCard({
             </div>
           </dl>
         </div>
-      </section>
+      </TraceCard>
     )
   }
 

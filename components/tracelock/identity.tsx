@@ -5,7 +5,7 @@ import { ChevronRight, Key, KeyRound, Shield, ShieldAlert, ShieldCheck } from 'l
 import { ALGORITHMS, LEDGER_NODES, type Recipient } from '@/lib/data'
 import { formatDate, formatTs, truncateHash } from '@/lib/format'
 import { useTracelock } from '@/lib/store'
-import { DataTable, Mono, PageHeader, Panel, StatusBadge, Td, Th, TraceButton } from './primitives'
+import { DataTable, GlassBlobCard, Mono, PageHeader, Panel, StatusBadge, Td, Th, TraceButton } from './primitives'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
 const SYSTEM_KEYS = [
@@ -52,24 +52,31 @@ export function IdentityView() {
         </span>
       </div>
 
-      {/* Summary Metrics */}
+      {/* Summary Metrics using GlassBlobCard (Card Style B) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="rounded-lg border border-border bg-card p-3">
+        <GlassBlobCard tone="emerald" className="p-3.5">
           <p className="label-caps">Active Identities</p>
           <p className="mt-1 font-mono text-2xl font-bold text-success">{activeCount}</p>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-[10px] text-muted-foreground mt-0.5">Verified public keys</p>
+        </GlassBlobCard>
+
+        <GlassBlobCard tone="ruby" className="p-3.5">
           <p className="label-caps">Revoked Identities</p>
           <p className="mt-1 font-mono text-2xl font-bold text-destructive">{revokedCount}</p>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-[10px] text-muted-foreground mt-0.5">Revocation committed to DLT</p>
+        </GlassBlobCard>
+
+        <GlassBlobCard tone="cyan" className="p-3.5">
           <p className="label-caps">Signing Primitive</p>
           <p className="mt-1 font-mono text-sm font-bold text-primary">{ALGORITHMS.signature}</p>
-        </div>
-        <div className="rounded-lg border border-border bg-card p-3">
+          <p className="text-[10px] text-muted-foreground mt-0.5">NIST FIPS 204 Lattice</p>
+        </GlassBlobCard>
+
+        <GlassBlobCard tone="cyan" className="p-3.5">
           <p className="label-caps">KEM Primitive</p>
           <p className="mt-1 font-mono text-sm font-bold text-primary">{ALGORITHMS.kem}</p>
-        </div>
+          <p className="text-[10px] text-muted-foreground mt-0.5">NIST FIPS 203 Lattice</p>
+        </GlassBlobCard>
       </div>
 
       {/* Main Table: Recipient Key Registry */}

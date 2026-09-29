@@ -30,25 +30,53 @@ function ChainBlock({
       type="button"
       onClick={onSelect}
       className={cn(
-        'w-full rounded-md border bg-background/60 px-3 py-2 text-left transition-colors',
-        invalid ? 'border-destructive/60 bg-destructive/10' : selected ? 'border-primary/60 bg-primary/10 shadow-sm' : 'border-border/80 hover:border-primary/40',
+        'group relative w-full rounded-md border p-3 text-left transition-all duration-200',
+        invalid
+          ? 'border-destructive/60 bg-destructive/10 shadow-[0_0_12px_rgba(239,68,68,0.15)]'
+          : selected
+            ? 'border-primary/70 bg-primary/10 shadow-[0_0_15px_rgba(56,189,248,0.15)] ring-1 ring-primary/40'
+            : 'border-border/80 bg-background/70 hover:border-primary/50 hover:bg-card/90 hover:translate-x-0.5',
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[9px] font-bold text-primary uppercase">{label}</span>
-        <span className="font-mono text-xs font-semibold">#{record.height}</span>
+        <div className="flex items-center gap-1.5">
+          <span
+            className={cn(
+              'size-1.5 rounded-full',
+              invalid ? 'bg-destructive animate-pulse' : selected ? 'bg-primary' : 'bg-success',
+            )}
+          />
+          <span className="font-mono text-[9px] font-bold text-primary uppercase tracking-wider">{label}</span>
+        </div>
+        <span className="font-mono text-xs font-bold text-foreground">#{record.height}</span>
       </div>
-      <p className="mt-0.5 text-xs font-medium text-foreground">{EVENT_LABEL[record.type]}</p>
-      <div className="mt-1 flex items-center justify-between font-mono text-[10px] text-muted-foreground">
-        <span>prev: {truncateHash(record.prevHash, 6, 4)}</span>
-        <span className={cn(tampered && 'text-destructive font-bold')}>
-          hash: {tampered ? truncateHash(hexFrom(`tampered:${record.eventHash}`), 6, 4) : truncateHash(record.eventHash, 6, 4)}
+      <p className="mt-1 text-xs font-semibold text-foreground group-hover:text-primary transition-colors">
+        {EVENT_LABEL[record.type]}
+      </p>
+
+      {/* Visual Hash Link */}
+      <div className="mt-1.5 flex items-center justify-between rounded bg-background/50 px-2 py-1 font-mono text-[9.5px]">
+        <span className="text-muted-foreground truncate max-w-[45%]">
+          prev:{truncateHash(record.prevHash, 5, 3)}
+        </span>
+        <span className="text-muted-foreground/50">→</span>
+        <span
+          className={cn(
+            'truncate max-w-[45%] font-medium',
+            tampered ? 'text-destructive font-bold animate-pulse' : 'text-foreground/90',
+          )}
+        >
+          {tampered
+            ? truncateHash(hexFrom(`tampered:${record.eventHash}`), 5, 3)
+            : truncateHash(record.eventHash, 5, 3)}
         </span>
       </div>
+
       {invalid && (
-        <p className="mt-1 font-mono text-[9.5px] tracking-wider text-destructive font-semibold">
-          {tampered ? 'TAMPERED · HASH RECOMPUTED' : 'PREV-HASH LINK BROKEN'}
-        </p>
+        <div className="mt-2 flex items-center justify-between rounded border border-destructive/40 bg-destructive/15 px-2 py-0.5 font-mono text-[9px] font-bold text-destructive">
+          <span>{tampered ? 'BLOCK ALTERED · HASH MISMATCH' : 'BROKEN LINK · TIP INVALIDATED'}</span>
+          <span>REJECTED</span>
+        </div>
       )}
     </button>
   )
@@ -66,8 +94,9 @@ export function LedgerView({ initialHeight }: { initialHeight?: number }) {
 
   const selected = ledger.find((r) => r.height === selectedHeight) ?? tip
   const idx = ledger.indexOf(selected)
-  const chainWindow = ledger.slice(Math.max(0, idx - 2), idx + 1)
-  const labels = ['BLOCK N-1', 'BLOCK N', 'SELECTED RECORD'].slice(-chainWindow.length)
+  // Window of up to 4 blocks: BLOCK N-2 -> BLOCK N-1 -> BLOCK N -> CURRENT RECORD
+  const chainWindow = ledger.slice(Math.max(0, idx - 3), idx + 1)
+  const labels = ['BLOCK N-2', 'BLOCK N-1', 'BLOCK N', 'CURRENT RECORD'].slice(-chainWindow.length)
   const invalidated = tamperedHeight === null ? 0 : ledger.filter((r) => r.height > tamperedHeight).length
 
   const isTampered = (r: LedgerRecord) => tamperedHeight === r.height
@@ -344,11 +373,16 @@ export function LedgerView({ initialHeight }: { initialHeight?: number }) {
                     <div
                       aria-hidden
                       className={cn(
-                        'flex justify-center py-0.5',
-                        isTampered(r) || isBroken(r) ? 'text-destructive' : 'text-primary/60',
+                        'flex items-center justify-center gap-1.5 py-1 text-[10px] font-mono transition-colors',
+                        isTampered(r) || isBroken(r) ? 'text-destructive' : 'text-primary/70',
                       )}
                     >
-                      <ArrowDown className="size-3.5" />
+                      <span className="h-px w-6 bg-current opacity-30" />
+                      <ArrowDown className="size-3 animate-pulse" />
+                      <span className="text-[9px] font-semibold tracking-wider uppercase opacity-75">
+                        {isTampered(r) || isBroken(r) ? 'BROKEN HASH LINK' : 'SHA3-256 HASH LINKED'}
+                      </span>
+                      <span className="h-px w-6 bg-current opacity-30" />
                     </div>
                   )}
                 </li>

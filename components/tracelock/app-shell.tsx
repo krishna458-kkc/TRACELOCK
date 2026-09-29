@@ -74,23 +74,37 @@ function Sidebar() {
                   href={href}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    'group relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[12.5px] font-medium transition-all duration-150',
+                    'group relative flex items-center gap-2.5 rounded-md px-3 py-2 text-[12.5px] font-medium transition-all duration-200',
                     active
-                      ? 'bg-sidebar-accent text-sidebar-foreground shadow-sm'
-                      : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
+                      ? 'bg-sidebar-accent text-sidebar-foreground shadow-sm border border-primary/20'
+                      : 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-foreground hover:translate-x-0.5',
                   )}
                 >
-                  <span className={cn('w-4 font-mono text-[10px]', active ? 'text-primary font-semibold' : 'text-muted-foreground/60')}>
+                  {/* Active highlight bar on left */}
+                  {active && (
+                    <span
+                      aria-hidden
+                      className="absolute left-0 top-1.5 bottom-1.5 w-1 rounded-r bg-primary shadow-[0_0_8px_rgba(56,189,248,0.7)]"
+                    />
+                  )}
+                  <span className={cn('w-4 font-mono text-[10px] transition-colors', active ? 'text-primary font-bold' : 'text-muted-foreground/60 group-hover:text-primary/70')}>
                     {String(i + 1).padStart(2, '0')}
                   </span>
-                  <Icon className={cn('size-4 shrink-0 transition-colors', active ? 'text-primary' : 'text-muted-foreground group-hover:text-sidebar-foreground')} strokeWidth={1.75} />
+                  <Icon
+                    className={cn(
+                      'size-4 shrink-0 transition-all duration-200',
+                      active
+                        ? 'text-primary scale-110'
+                        : 'text-muted-foreground group-hover:text-primary group-hover:scale-105',
+                    )}
+                    strokeWidth={1.75}
+                  />
                   <span className="truncate">{label}</span>
                   {badge && (
-                    <span className="ml-auto rounded border border-primary/40 bg-primary/15 px-1.5 py-0.2 font-mono text-[9px] font-semibold tracking-wider text-primary">
+                    <span className="ml-auto rounded border border-primary/40 bg-primary/15 px-1.5 py-0.2 font-mono text-[9px] font-semibold tracking-wider text-primary shadow-[0_0_8px_rgba(56,189,248,0.2)]">
                       {badge}
                     </span>
                   )}
-                  {active && !badge && <span aria-hidden className="ml-auto h-3.5 w-1 rounded-full bg-primary" />}
                 </Link>
               </li>
             )

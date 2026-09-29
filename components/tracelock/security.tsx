@@ -5,7 +5,7 @@ import { CheckCircle2, ChevronRight, Lock, Shield, ShieldCheck, Terminal } from 
 import { ALGORITHMS, LEDGER_NODES } from '@/lib/data'
 import { formatTs } from '@/lib/format'
 import { useTracelock } from '@/lib/store'
-import { DataTable, Mono, PageHeader, Panel, StatusBadge, StatusDot, Td, Th, TraceButton } from './primitives'
+import { DataTable, GradientHoverCard, Mono, PageHeader, Panel, StatusBadge, StatusDot, Td, Th, TraceButton } from './primitives'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 interface PillarData {
@@ -135,13 +135,10 @@ export function SecurityView() {
         </div>
       </div>
 
-      {/* 4 Compact Security Pillars */}
+      {/* 4 Compact Security Pillars using GradientHoverCard (Card Style C) */}
       <div className="grid gap-4 md:grid-cols-2">
         {PILLARS.map((p) => (
-          <div
-            key={p.id}
-            className="flex flex-col justify-between rounded-lg border border-border bg-card p-4 transition-all duration-200 hover:border-primary/40"
-          >
+          <GradientHoverCard key={p.id} className="p-4 flex flex-col justify-between">
             <div>
               <div className="flex items-center justify-between pb-2 border-b border-border/50">
                 <span className="font-mono text-xs font-bold text-foreground tracking-wide">
@@ -172,7 +169,7 @@ export function SecurityView() {
                 AUDIT SPECIFICATION <ChevronRight className="size-3" />
               </TraceButton>
             </div>
-          </div>
+          </GradientHoverCard>
         ))}
       </div>
 

@@ -2,6 +2,7 @@
 
 import { ArrowDown, ArrowRight, CheckCircle2, Cpu, Database, Eye, FileText, Key, Lock, Network, ShieldCheck } from 'lucide-react'
 import { ALGORITHMS, LEDGER_NODES } from '@/lib/data'
+import { cn } from '@/lib/utils'
 import { DataTable, Mono, PageHeader, Panel, StatusBadge, Td, Th } from './primitives'
 
 const MAIN_PATH = [
@@ -30,7 +31,12 @@ const PRIMITIVES = [
   { primitive: 'Forensic Watermark', algorithm: ALGORITHMS.watermark, standard: 'Multi-Layer Stego', use: 'Session-specific imperceptible payload' },
 ]
 
+import { useState } from 'react'
+
 export function ArchitectureView() {
+  const [hoveredMain, setHoveredMain] = useState<number | null>(null)
+  const [hoveredForensic, setHoveredForensic] = useState<number | null>(null)
+
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
@@ -45,24 +51,53 @@ export function ArchitectureView() {
         description="Sequential pipeline executed upon every authorized document request."
       >
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-2">
-          {MAIN_PATH.map((p, i) => (
-            <div key={p.step} className="flex flex-col xl:flex-row items-center gap-2">
-              <div className="w-full flex-1 rounded-md border border-border/80 bg-background/60 p-3 hover:border-primary/40 transition-colors">
-                <div className="flex items-center justify-between pb-1">
-                  <span className="font-mono text-[10px] font-bold text-primary">{p.step}</span>
-                  <span className="font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">{p.spec}</span>
+          {MAIN_PATH.map((p, i) => {
+            const isHovered = hoveredMain === i
+            const isConnected = hoveredMain !== null && i <= hoveredMain
+            return (
+              <div
+                key={p.step}
+                className="flex flex-col xl:flex-row items-center gap-2"
+                onMouseEnter={() => setHoveredMain(i)}
+                onMouseLeave={() => setHoveredMain(null)}
+              >
+                <div
+                  className={cn(
+                    'w-full flex-1 rounded-md border p-3 transition-all duration-200 cursor-pointer select-none',
+                    isHovered
+                      ? 'border-primary/80 bg-primary/15 shadow-[0_0_15px_rgba(56,189,248,0.2)] scale-[1.02]'
+                      : isConnected
+                        ? 'border-primary/40 bg-primary/5'
+                        : 'border-border/80 bg-background/60 hover:border-primary/40',
+                  )}
+                >
+                  <div className="flex items-center justify-between pb-1">
+                    <span className={cn('font-mono text-[10px] font-bold', isHovered ? 'text-primary' : 'text-primary/80')}>
+                      {p.step}
+                    </span>
+                    <span className="font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">{p.spec}</span>
+                  </div>
+                  <p className={cn('mt-1 font-mono text-xs font-bold tracking-tight', isHovered ? 'text-primary' : 'text-foreground')}>
+                    {p.name}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground leading-tight">{p.desc}</p>
                 </div>
-                <p className="mt-1 font-mono text-xs font-bold text-foreground tracking-tight">{p.name}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground leading-tight">{p.desc}</p>
-              </div>
 
-              {i < MAIN_PATH.length - 1 && (
-                <div className="hidden xl:flex items-center justify-center text-primary/50">
-                  <ArrowRight className="size-3.5" />
-                </div>
-              )}
-            </div>
-          ))}
+                {i < MAIN_PATH.length - 1 && (
+                  <div
+                    className={cn(
+                      'hidden xl:flex items-center justify-center transition-colors duration-200',
+                      hoveredMain !== null && i < hoveredMain
+                        ? 'text-primary animate-pulse'
+                        : 'text-primary/40',
+                    )}
+                  >
+                    <ArrowRight className="size-3.5" />
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </Panel>
 
@@ -72,24 +107,53 @@ export function ArchitectureView() {
         description="Air-gapped reverse pipeline executed when an unauthorized document leak occurs."
       >
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-2">
-          {INVESTIGATION_PATH.map((p, i) => (
-            <div key={p.step} className="flex flex-col xl:flex-row items-center gap-2">
-              <div className="w-full flex-1 rounded-md border border-success/30 bg-background/60 p-3 hover:border-success/60 transition-colors">
-                <div className="flex items-center justify-between pb-1">
-                  <span className="font-mono text-[10px] font-bold text-success">STAGE {p.step}</span>
-                  <span className="font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">{p.spec}</span>
+          {INVESTIGATION_PATH.map((p, i) => {
+            const isHovered = hoveredForensic === i
+            const isConnected = hoveredForensic !== null && i <= hoveredForensic
+            return (
+              <div
+                key={p.step}
+                className="flex flex-col xl:flex-row items-center gap-2"
+                onMouseEnter={() => setHoveredForensic(i)}
+                onMouseLeave={() => setHoveredForensic(null)}
+              >
+                <div
+                  className={cn(
+                    'w-full flex-1 rounded-md border p-3 transition-all duration-200 cursor-pointer select-none',
+                    isHovered
+                      ? 'border-success/80 bg-success/15 shadow-[0_0_15px_rgba(34,197,94,0.2)] scale-[1.02]'
+                      : isConnected
+                        ? 'border-success/40 bg-success/5'
+                        : 'border-success/30 bg-background/60 hover:border-success/60',
+                  )}
+                >
+                  <div className="flex items-center justify-between pb-1">
+                    <span className={cn('font-mono text-[10px] font-bold', isHovered ? 'text-success' : 'text-success/80')}>
+                      STAGE {p.step}
+                    </span>
+                    <span className="font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">{p.spec}</span>
+                  </div>
+                  <p className={cn('mt-1 font-mono text-xs font-bold tracking-tight', isHovered ? 'text-success' : 'text-foreground')}>
+                    {p.name}
+                  </p>
+                  <p className="mt-1 text-[11px] text-muted-foreground leading-tight">{p.desc}</p>
                 </div>
-                <p className="mt-1 font-mono text-xs font-bold text-foreground tracking-tight">{p.name}</p>
-                <p className="mt-1 text-[11px] text-muted-foreground leading-tight">{p.desc}</p>
-              </div>
 
-              {i < INVESTIGATION_PATH.length - 1 && (
-                <div className="hidden xl:flex items-center justify-center text-success/50">
-                  <ArrowRight className="size-3.5" />
-                </div>
-              )}
-            </div>
-          ))}
+                {i < INVESTIGATION_PATH.length - 1 && (
+                  <div
+                    className={cn(
+                      'hidden xl:flex items-center justify-center transition-colors duration-200',
+                      hoveredForensic !== null && i < hoveredForensic
+                        ? 'text-success animate-pulse'
+                        : 'text-success/40',
+                    )}
+                  >
+                    <ArrowRight className="size-3.5" />
+                  </div>
+                )}
+              </div>
+            )
+          })}
         </div>
       </Panel>
 

@@ -45,17 +45,22 @@ export function DocumentCard({
         <div className="flex items-start justify-between gap-3 pb-3 border-b border-border/60">
           <div className="flex items-start gap-3 min-w-0">
             <div className={cn(
-              'grid size-10 shrink-0 place-items-center rounded-md border text-primary',
-              isDemo ? 'border-primary/50 bg-primary/20 shadow-[0_0_12px_rgba(56,189,248,0.2)]' : 'border-border bg-background/80'
+              'grid size-10 shrink-0 place-items-center rounded-md border text-primary transition-all duration-200 group-hover:scale-105',
+              isDemo ? 'border-primary/50 bg-primary/20 shadow-[0_0_12px_rgba(56,189,248,0.2)]' : 'border-border bg-background/80 group-hover:border-primary/40'
             )}>
               <FileLock2 className="size-5" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <p className="truncate text-sm font-semibold text-foreground">{doc.name}</p>
+                <p className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{doc.name}</p>
                 <span className="rounded border border-border bg-secondary/80 px-1.5 py-0.2 font-mono text-[9px] font-bold text-muted-foreground">
                   {fileExt}
                 </span>
+                {isDemo && (
+                  <span className="rounded border border-primary/40 bg-primary/15 px-1 py-0.2 font-mono text-[8.5px] font-bold text-primary">
+                    CANONICAL
+                  </span>
+                )}
               </div>
               <p className="font-mono text-[11px] text-muted-foreground">
                 {doc.id} · {formatBytes(doc.sizeBytes)} · {doc.pages} pp
@@ -113,17 +118,11 @@ export function DocumentCard({
     </div>
   )
 
-  if (isDemo) {
-    return (
-      <TraceCard variant="rotating" rotatingVariant="cyan" className="min-h-[240px]">
-        {content}
-      </TraceCard>
-    )
-  }
-
   return (
-    <div className="rounded-lg border border-border bg-card/60 transition-all duration-200 hover:border-primary/40 hover:bg-card min-h-[240px]">
-      {content}
+    <div className="tracelock-gradient-card min-h-[240px] group">
+      <div className="tracelock-gradient-inner h-full flex flex-col justify-between bg-card/90">
+        {content}
+      </div>
     </div>
   )
 }
@@ -354,11 +353,12 @@ export function DistributeDialog({
   onOpenChange: (o: boolean) => void
 }) {
   const { recipients, distributeDocument } = useTracelock()
+  const [selected, setSelected] = useState<string[]>([])
+  const [loading, setLoading] = useState(false)
+
   if (!doc) return null
 
   const eligible = recipients.filter((r) => r.authorization === 'AUTHORIZED' && !doc.recipients.includes(r.id))
-  const [selected, setSelected] = useState<string[]>([])
-  const [loading, setLoading] = useState(false)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

@@ -193,6 +193,178 @@
   height: 100%;
 }
 
+/* Vengeance UI: Stagger Text Animation */
+@keyframes staggerFadeIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-stagger-char {
+  display: inline-block;
+  opacity: 0;
+  animation: staggerFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Uiverse Card Style B: Moving Blob Glass Card (adapted for tactical cyber UI) */
+@keyframes blob-drift-1 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(30px, -20px) scale(1.1);
+  }
+  66% {
+    transform: translate(-20px, 20px) scale(0.95);
+  }
+}
+
+@keyframes blob-drift-2 {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  33% {
+    transform: translate(-30px, 25px) scale(0.9);
+  }
+  66% {
+    transform: translate(25px, -15px) scale(1.08);
+  }
+}
+
+.tracelock-glass-blob-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid oklch(0.35 0.02 255 / 0.7);
+  background: oklch(0.195 0.014 255 / 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tracelock-glass-blob-card:hover {
+  border-color: oklch(0.76 0.11 222 / 0.5);
+  box-shadow: 0 0 20px -4px oklch(0.76 0.11 222 / 0.2);
+  transform: translateY(-1px);
+}
+
+.blob-element-1 {
+  position: absolute;
+  top: -20%;
+  left: -15%;
+  width: 140px;
+  height: 140px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, oklch(0.76 0.11 222 / 0.25), transparent 70%);
+  filter: blur(24px);
+  pointer-events: none;
+  animation: blob-drift-1 9s ease-in-out infinite;
+  z-index: 0;
+}
+
+.blob-element-2 {
+  position: absolute;
+  bottom: -25%;
+  right: -15%;
+  width: 160px;
+  height: 160px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, oklch(0.76 0.14 158 / 0.2), transparent 70%);
+  filter: blur(28px);
+  pointer-events: none;
+  animation: blob-drift-2 11s ease-in-out infinite;
+  z-index: 0;
+}
+
+/* Uiverse Card Style C: Gradient Hover Card (Tiagoadag concept adapted) */
+.tracelock-gradient-card {
+  position: relative;
+  border-radius: var(--radius-lg);
+  padding: 1px;
+  background: linear-gradient(
+    135deg,
+    oklch(0.32 0.02 255),
+    oklch(0.24 0.015 255),
+    oklch(0.32 0.02 255)
+  );
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tracelock-gradient-card:hover {
+  background: linear-gradient(
+    135deg,
+    oklch(0.76 0.11 222 / 0.8),
+    oklch(0.35 0.03 255 / 0.4),
+    oklch(0.76 0.14 158 / 0.7)
+  );
+  box-shadow: 0 0 24px -6px oklch(0.76 0.11 222 / 0.25);
+  transform: translateY(-2px);
+}
+
+.tracelock-gradient-inner {
+  position: relative;
+  border-radius: calc(var(--radius-lg) - 1px);
+  background: oklch(0.19 0.013 255);
+  height: 100%;
+  width: 100%;
+}
+
+/* Tactical radar sweep for forensic dropzone */
+@keyframes radar-sweep {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(200%);
+    opacity: 0;
+  }
+}
+
+.forensic-scanner-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, oklch(0.76 0.11 222), transparent);
+  box-shadow: 0 0 12px oklch(0.76 0.11 222);
+  animation: radar-sweep 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Button Shimmer Effect */
+@keyframes btn-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.button-shimmer-sweep {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
+  transform: skewX(-20deg) translateX(-100%);
+  pointer-events: none;
+}
+
+button:hover > .button-shimmer-sweep {
+  animation: btn-shimmer 0.75s ease-out;
+}
+
 /* Subtle scrollbars for technical panels */
 ::-webkit-scrollbar {
   width: 6px;
@@ -207,4 +379,13 @@
 }
 ::-webkit-scrollbar-thumb:hover {
   background: oklch(0.38 0.02 255);
+}
+
+/* Accessibility: Respect Reduced Motion Preferences */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

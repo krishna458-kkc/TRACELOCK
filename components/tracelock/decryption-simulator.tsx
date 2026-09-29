@@ -7,7 +7,7 @@ import { ALGORITHMS } from '@/lib/data'
 import { formatTs, truncateHash } from '@/lib/format'
 import { useTracelock, type ExtendedDecryptionSession } from '@/lib/store'
 import { cn } from '@/lib/utils'
-import { Panel, StatusBadge, TraceButton, TraceCard } from './primitives'
+import { GlassBlobCard, Panel, StatusBadge, TraceButton, TraceCard } from './primitives'
 import { WorkflowStepper, type WorkflowStep } from './workflow-stepper'
 
 const STEP_MS = 450
@@ -237,41 +237,43 @@ export function DecryptionSimulator({
       >
         {finished && draft ? (
           <div className="flex flex-col gap-4">
-            <div className="rounded-lg border border-border/80 bg-background/60 p-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                <span className="label-caps">Generated Session ID</span>
-                <span className="font-mono text-xs font-bold text-primary">{draft.id}</span>
-              </div>
+            <GlassBlobCard tone="emerald" className="border-success/30 p-0">
+              <div className="p-4 flex flex-col gap-3">
+                <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                  <span className="label-caps">Generated Session ID</span>
+                  <span className="font-mono text-xs font-bold text-primary">{draft.id}</span>
+                </div>
 
-              <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                <span className="label-caps">Embedded Watermark ID</span>
-                <span className="font-mono text-xs font-bold text-foreground">{draft.watermarkId}</span>
-              </div>
+                <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                  <span className="label-caps">Embedded Watermark ID</span>
+                  <span className="font-mono text-xs font-bold text-foreground">{draft.watermarkId}</span>
+                </div>
 
-              <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                <span className="label-caps">Recipient Attributed</span>
-                <span className="font-mono text-xs text-foreground">{draft.recipientId} ({recipient?.name})</span>
-              </div>
+                <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                  <span className="label-caps">Recipient Attributed</span>
+                  <span className="font-mono text-xs text-foreground font-semibold">{draft.recipientId} ({recipient?.name})</span>
+                </div>
 
-              <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                <span className="label-caps">Ledger Block Height</span>
-                <span className="font-mono text-xs font-bold text-success">
-                  {record ? `#${record.height} (${record.recordId})` : '#1'}
-                </span>
-              </div>
+                <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                  <span className="label-caps">Ledger Block Height</span>
+                  <span className="font-mono text-xs font-bold text-success">
+                    {record ? `#${record.height} (${record.recordId})` : '#1'}
+                  </span>
+                </div>
 
-              <div className="flex flex-col gap-1 border-b border-border/40 pb-2">
-                <span className="label-caps">Post-Quantum ML-DSA-65 Signature</span>
-                <span className="font-mono text-[10px] text-muted-foreground break-all">
-                  {draft.signature ? truncateHash(draft.signature, 24, 16) : 'Valid (FIPS 204 Enclave Signed)'}
-                </span>
-              </div>
+                <div className="flex flex-col gap-1 border-b border-border/40 pb-2">
+                  <span className="label-caps">Post-Quantum ML-DSA-65 Signature</span>
+                  <span className="font-mono text-[10px] text-muted-foreground break-all">
+                    {draft.signature ? truncateHash(draft.signature, 24, 16) : 'Valid (FIPS 204 Enclave Signed)'}
+                  </span>
+                </div>
 
-              <div className="flex items-center justify-between">
-                <span className="label-caps">Decryption Timestamp</span>
-                <span className="font-mono text-xs text-muted-foreground">{formatTs(draft.timestamp)}</span>
+                <div className="flex items-center justify-between">
+                  <span className="label-caps">Decryption Timestamp</span>
+                  <span className="font-mono text-xs text-muted-foreground">{formatTs(draft.timestamp)}</span>
+                </div>
               </div>
-            </div>
+            </GlassBlobCard>
 
             {/* Actions */}
             <div className="flex flex-col gap-2 pt-2 border-t border-border/60">

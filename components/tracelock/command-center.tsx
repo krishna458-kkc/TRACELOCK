@@ -6,7 +6,7 @@ import { ArrowRight, ChevronRight, FileKey2, Lock, ScanSearch, ShieldCheck, X } 
 import { useTracelock } from '@/lib/store'
 import { formatTs, truncateHash } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { DataTable, Hash, Mono, PageHeader, Panel, StatusBadge, StatusDot, Td, Th, TraceButton, TraceCard } from './primitives'
+import { DataTable, GlassBlobCard, GradientHoverCard, Hash, Mono, PageHeader, Panel, StatsCounter, StatusBadge, StatusDot, Td, Th, TraceButton, TraceCard } from './primitives'
 import { ALGORITHMS, type DecryptionSession } from '@/lib/data'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
@@ -21,29 +21,39 @@ function MetricCard({
   sub: string
   href: string
 }) {
+  const numericValue = typeof value === 'number' ? value : parseInt(String(value), 10) || 0
   return (
-    <Link
-      href={href}
-      className="group relative overflow-hidden rounded-lg border border-border bg-card/60 p-3.5 transition-all duration-200 hover:border-primary/50 hover:bg-card hover:shadow-[0_0_15px_-4px_rgba(56,189,248,0.15)]"
-    >
-      <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">{label}</p>
-        <ArrowRight className="size-3 text-muted-foreground/60 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:text-primary" />
+    <Link href={href} className="group block h-full">
+      <div className="tracelock-gradient-card h-full">
+        <div className="tracelock-gradient-inner p-3.5 flex flex-col justify-between h-full bg-card/85">
+          <div className="flex items-center justify-between">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
+              {label}
+            </p>
+            <ArrowRight className="size-3 text-muted-foreground/60 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-primary" />
+          </div>
+          <div className="mt-2">
+            <p className="font-mono text-2xl font-bold tabular-nums text-foreground group-hover:text-primary transition-colors">
+              <StatsCounter value={numericValue} />
+            </p>
+            <p className="mt-0.5 font-mono text-[11px] text-muted-foreground truncate">{sub}</p>
+          </div>
+        </div>
       </div>
-      <p className="mt-1.5 font-mono text-2xl font-bold tabular-nums text-foreground">{value}</p>
-      <p className="mt-0.5 font-mono text-[11px] text-muted-foreground truncate">{sub}</p>
     </Link>
   )
 }
 
 function SecurityPipeline() {
+  const [hoveredStage, setHoveredStage] = useState<number | null>(null)
+
   const stages = [
-    { title: 'ENCRYPT', spec: 'ML-KEM-768', desc: 'Broadcast KEM encapsulation' },
-    { title: 'AUTHORIZE', spec: 'Policy Engine', desc: 'Classification & token scope audit' },
-    { title: 'DECRYPT', spec: 'Device Enclave', desc: 'AES-256-GCM authenticated plaintext' },
-    { title: 'WATERMARK', spec: 'Forensic Stego', desc: 'Imperceptible session-bound payload' },
-    { title: 'SIGN', spec: 'ML-DSA-65', desc: 'Recipient hardware-bound signature' },
-    { title: 'LEDGER', spec: 'Offline DLT', desc: '4-node permissioned chain commit' },
+    { title: 'ENCRYPT', spec: 'ML-KEM-768', desc: 'Broadcast KEM encapsulation', detail: 'NIST FIPS 203 Post-quantum content key encapsulation' },
+    { title: 'AUTHORIZE', spec: 'Policy Engine', desc: 'Classification & token scope audit', detail: 'Strict clearance enforcement across recipient tokens' },
+    { title: 'DECRYPT', spec: 'Device Enclave', desc: 'AES-256-GCM authenticated plaintext', detail: 'Ephemeral plaintext restoration in secure memory' },
+    { title: 'WATERMARK', spec: 'Forensic Stego', desc: 'Imperceptible session-bound payload', detail: 'Spread-spectrum & zero-width steganographic injection' },
+    { title: 'SIGN', spec: 'ML-DSA-65', desc: 'Recipient hardware-bound signature', detail: 'NIST FIPS 204 digital signature over canonical event' },
+    { title: 'LEDGER', spec: 'Offline DLT', desc: '4-node permissioned chain commit', detail: 'Immutable SHA3-256 block commitment to offline chain' },
   ]
 
   return (
@@ -52,26 +62,47 @@ function SecurityPipeline() {
       description="The 6-stage cryptographic and forensic sequence executed for every authorized decryption."
     >
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-2.5">
-        {stages.map((st, i) => (
-          <div
-            key={st.title}
-            className="flex flex-col justify-between rounded-md border border-border/80 bg-background/50 p-2.5 transition-colors hover:border-primary/40"
-          >
-            <div>
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[10px] font-bold text-primary">0{i + 1}</span>
-                <span className="font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">{st.spec}</span>
+        {stages.map((st, i) => {
+          const isHovered = hoveredStage === i
+          return (
+            <div
+              key={st.title}
+              onMouseEnter={() => setHoveredStage(i)}
+              onMouseLeave={() => setHoveredStage(null)}
+              className={cn(
+                'group relative flex flex-col justify-between rounded-md border p-2.5 transition-all duration-200 cursor-default',
+                isHovered
+                  ? 'border-primary/80 bg-primary/10 shadow-[0_0_16px_rgba(56,189,248,0.2)] -translate-y-0.5'
+                  : 'border-border/80 bg-background/50 hover:border-primary/40'
+              )}
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <span className={cn('font-mono text-[10px] font-bold transition-colors', isHovered ? 'text-primary' : 'text-primary/80')}>
+                    0{i + 1}
+                  </span>
+                  <span className="font-mono text-[8.5px] uppercase tracking-wider text-muted-foreground">{st.spec}</span>
+                </div>
+                <p className="mt-1 font-mono text-xs font-bold text-foreground tracking-wide group-hover:text-primary transition-colors">
+                  {st.title}
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1">
+                  {isHovered ? st.detail : st.desc}
+                </p>
               </div>
-              <p className="mt-1 font-mono text-xs font-bold text-foreground tracking-wide">{st.title}</p>
-              <p className="mt-0.5 text-[11px] text-muted-foreground line-clamp-1">{st.desc}</p>
+              <div className="mt-2 pt-1.5 border-t border-border/40 flex items-center justify-between">
+                <span className="inline-flex items-center gap-1 font-mono text-[9px] text-success">
+                  <span className={cn('size-1 rounded-full bg-success transition-transform', isHovered && 'scale-125 animate-pulse')} /> ENFORCED
+                </span>
+                {i < stages.length - 1 && (
+                  <span className="hidden xl:inline text-[9px] font-mono text-muted-foreground/40 group-hover:text-primary transition-colors">
+                    →
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="mt-2 pt-1.5 border-t border-border/40 flex items-center justify-between">
-              <span className="inline-flex items-center gap-1 font-mono text-[9px] text-success">
-                <span className="size-1 rounded-full bg-success" /> ENFORCED
-              </span>
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </Panel>
   )
@@ -261,7 +292,11 @@ export function CommandCenter() {
             <SystemIntegrity />
           </Panel>
 
-          <Panel title="Enclave Ledger Tip">
+          <GlassBlobCard tone="cyan" className="border-border/80">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-border/40">
+              <span className="label-caps text-foreground">Enclave Ledger Tip</span>
+              <span className="size-2 rounded-full bg-success animate-pulse" />
+            </div>
             {tip && (
               <dl className="flex flex-col gap-2 text-xs">
                 <div className="flex justify-between">
@@ -276,7 +311,7 @@ export function CommandCenter() {
                 </div>
                 <div className="flex justify-between">
                   <dt className="text-muted-foreground">Consensus</dt>
-                  <dd className="font-mono text-success text-[11px]">4 / 4 VALIDATOR IDENTITIES</dd>
+                  <dd className="font-mono text-success text-[11px] font-semibold">4 / 4 VALIDATOR IDENTITIES</dd>
                 </div>
                 <div className="flex justify-between border-t border-border/50 pt-2">
                   <dt className="text-muted-foreground">Integrity</dt>
@@ -286,7 +321,7 @@ export function CommandCenter() {
                 </div>
               </dl>
             )}
-          </Panel>
+          </GlassBlobCard>
         </div>
       </div>
 

@@ -21,6 +21,7 @@ import {
 import { ALGORITHMS, type Classification, type Recipient } from '@/lib/data'
 import { formatTs, groupHex, truncateHash } from '@/lib/format'
 import { useTracelock } from '@/lib/store'
+import { cn } from '@/lib/utils'
 import { DataTable, Mono, PageHeader, StatusBadge, Td, Th, TraceButton } from './primitives'
 
 function RecipientDrawer({
@@ -308,23 +309,33 @@ export function RecipientsView({ initialOpen }: { initialOpen?: string }) {
               const last = sessions
                 .filter((s) => s.recipientId === r.id)
                 .sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0]
+              const isRevoked = r.authorization === 'REVOKED'
 
               return (
                 <tr
                   key={r.id}
                   onClick={() => setOpenId(r.id)}
-                  className="cursor-pointer transition-colors hover:bg-secondary/40"
+                  className={cn(
+                    'group cursor-pointer transition-all duration-150',
+                    isRevoked
+                      ? 'bg-destructive/[0.02] hover:bg-destructive/[0.06] text-muted-foreground/80'
+                      : 'hover:bg-primary/[0.05] hover:shadow-inner'
+                  )}
                 >
                   <Td>
-                    <span className="font-mono text-xs font-semibold text-primary">{r.id}</span>
+                    <span className={cn('font-mono text-xs font-semibold', isRevoked ? 'text-muted-foreground line-through' : 'text-primary')}>
+                      {r.id}
+                    </span>
                   </Td>
-                  <Td className="font-medium text-foreground">{r.name}</Td>
+                  <Td className="font-medium text-foreground group-hover:text-primary transition-colors">
+                    {r.name}
+                  </Td>
                   <Td>
                     <p className="text-xs text-foreground/90">{r.role}</p>
                     <p className="text-[11px] text-muted-foreground">{r.organization}</p>
                   </Td>
                   <Td>
-                    <StatusBadge tone={r.authorization === 'AUTHORIZED' ? 'success' : 'danger'}>
+                    <StatusBadge tone={isRevoked ? 'danger' : 'success'}>
                       {r.authorization}
                     </StatusBadge>
                   </Td>
@@ -343,9 +354,9 @@ export function RecipientsView({ initialOpen }: { initialOpen?: string }) {
                         e.stopPropagation()
                         setOpenId(r.id)
                       }}
-                      className="font-mono text-xs text-muted-foreground hover:text-primary underline flex items-center gap-1 ml-auto"
+                      className="font-mono text-xs text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all underline flex items-center gap-1 ml-auto"
                     >
-                      Audit <ChevronRight className="size-3" />
+                      Audit <ChevronRight className="size-3 transition-transform group-hover:translate-x-0.5" />
                     </button>
                   </Td>
                 </tr>
