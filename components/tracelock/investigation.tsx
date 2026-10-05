@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import { CheckCircle2, FileCheck, FileWarning, Play, RotateCcw, ShieldAlert, Upload } from 'lucide-react'
+import { CheckCircle2, Download, FileCheck, FileWarning, Play, RotateCcw, ShieldAlert, Upload } from 'lucide-react'
 import { API_BASE_URL } from '@/lib/api/client'
 import type { ApiInvestigationReport } from '@/lib/api'
 import { DEMO_LEAK_SESSION_ID } from '@/lib/data'
@@ -9,7 +9,7 @@ import { formatBytes, formatTs, truncateHash } from '@/lib/format'
 import { useTracelock } from '@/lib/store'
 import { cn } from '@/lib/utils'
 import { EvidenceChainDialog, ForensicResultCard, type LeakedCopy } from './forensic-result'
-import { Mono, PageHeader, Panel, StatusBadge, TraceButton } from './primitives'
+import { Mono, PageHeader, Panel, ShinyText, StatusBadge, TraceButton } from './primitives'
 import { type StepStatus, type WorkflowStep, WorkflowStepper } from './workflow-stepper'
 
 const STEP_MS = 550
@@ -39,6 +39,22 @@ export function InvestigationView({ sessionId }: { sessionId?: string }) {
   const attributed = useRef(false)
   const running = forensicState === 'ANALYZING'
   const isFinished = forensicState === 'VERIFIED' || forensicState === 'FAILED'
+
+  // Demo Evidence from URL param or TracelockContext
+  const activeSessionTarget = sessionId ? getSession(sessionId) : undefined
+  const activeDemoEvidence = ctx.selectedDemoEvidence?.sessionId === sessionId
+    ? ctx.selectedDemoEvidence
+    : sessionId && activeSessionTarget
+      ? {
+          sessionId,
+          recipientId: activeSessionTarget.recipientId,
+          recipientName: getRecipient(activeSessionTarget.recipientId)?.name || activeSessionTarget.recipientId,
+          documentId: activeSessionTarget.documentId,
+          documentName: getDocument(activeSessionTarget.documentId)?.name || activeSessionTarget.documentId,
+          watermarkId: activeSessionTarget.watermarkId,
+          downloadUrl: `${API_BASE_URL}/documents/download/${sessionId}_decrypted.pdf`,
+        }
+      : ctx.selectedDemoEvidence
 
   // Look up target session only if verified or requested, NEVER use it to fake attribution
   const verifiedSessionId = backendReport?.overall_status === 'CRYPTOGRAPHICALLY VERIFIED' ? backendReport.session_id : undefined
@@ -148,6 +164,51 @@ export function InvestigationView({ sessionId }: { sessionId?: string }) {
       setIsDemoLoading(false)
     }
   }
+
+  // Load recipient-specific demo evidence from backend
+  async function loadDemoEvidence(evidence: {
+    sessionId: string
+    recipientId: string
+    recipientName: string
+    documentName: string
+    downloadUrl?: string
+  }) {
+    setIsDemoLoading(true)
+    try {
+      setForensicState('EVIDENCE_LOADED')
+      setCurrent(-1)
+      setEvidenceOpen(false)
+      setBackendReport(null)
+      attributed.current = false
+
+      const url = evidence.downloadUrl || `${API_BASE_URL}/documents/download/${evidence.sessionId}_decrypted.pdf`
+      const res = await fetch(url)
+      if (!res.ok) throw new Error(`HTTP ${res.status} fetching decrypted copy`)
+      const blob = await res.blob()
+      const cleanDocName = evidence.documentName.replace(/\.[^/.]+$/, '')
+      const filename = `${cleanDocName}_${evidence.sessionId}_leaked.pdf`
+      const file = new File([blob], filename, { type: 'application/pdf' })
+      setActualFile(file)
+      const hash = await sha256Hex(file)
+      setLeaked({
+        name: filename,
+        sizeBytes: file.size,
+        hash,
+        source: `Simulated Leak Evidence (${evidence.recipientId} — ${evidence.recipientName})`,
+      })
+    } catch (err: any) {
+      console.error('Failed to load demo evidence:', err)
+    } finally {
+      setIsDemoLoading(false)
+    }
+  }
+
+  // Auto-load if navigated with demoSession param (and not canonical default)
+  useEffect(() => {
+    if (sessionId && sessionId !== 'SES-8F29A1' && activeDemoEvidence && !actualFile) {
+      loadDemoEvidence(activeDemoEvidence)
+    }
+  }, [sessionId, activeDemoEvidence, actualFile])
 
   // Execute Analysis
   async function startAnalysis() {
@@ -473,6 +534,67 @@ export function InvestigationView({ sessionId }: { sessionId?: string }) {
         }
       />
 
+      {/* Demo Leak Evidence Selection Banner */}
+      {activeDemoEvidence && (
+        <div className="rounded-lg border border-warning/50 bg-warning/10 p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-warning font-mono text-xs font-bold tracking-wider">
+              <FileWarning className="size-4" /> DEMO EVIDENCE SELECTED FOR INVESTIGATION
+            </div>
+            <StatusBadge tone="warning">SIMULATED LEAK EVIDENCE</StatusBadge>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono text-xs border-y border-warning/20 py-2.5">
+            <div>
+              <span className="text-[10px] text-muted-foreground block">RECIPIENT</span>
+              <span className="font-semibold text-foreground">
+                {activeDemoEvidence.recipientId} ({activeDemoEvidence.recipientName})
+              </span>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground block">DOCUMENT</span>
+              <span className="text-foreground truncate block">{activeDemoEvidence.documentName}</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground block">SESSION ID</span>
+              <span className="text-primary font-bold">{activeDemoEvidence.sessionId}</span>
+            </div>
+            <div>
+              <span className="text-[10px] text-muted-foreground block">WATERMARK ID</span>
+              <span className="text-foreground">{activeDemoEvidence.watermarkId}</span>
+            </div>
+          </div>
+
+          <p className="text-[11px] text-warning/90 italic border-l-2 border-warning/60 pl-2">
+            Simulated leak scenario — this recipient-specific copy is intentionally selected as simulated leaked evidence for demonstration.
+          </p>
+
+          <div className="flex flex-wrap items-center gap-2 pt-1">
+            <TraceButton
+              variant="primary"
+              size="sm"
+              className="font-mono text-xs gap-1.5"
+              onClick={() => loadDemoEvidence(activeDemoEvidence)}
+              loading={isDemoLoading}
+              disabled={running}
+            >
+              <Upload className="size-3.5" /> LOAD THIS RECIPIENT&apos;S COPY INTO ENCLAVE
+            </TraceButton>
+
+            <a
+              href={activeDemoEvidence.downloadUrl || `${API_BASE_URL}/documents/download/${activeDemoEvidence.sessionId}_decrypted.pdf`}
+              download={`${activeDemoEvidence.sessionId}_decrypted.pdf`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <TraceButton variant="outline" size="sm" className="font-mono text-xs gap-1.5">
+                <Download className="size-3.5" /> DOWNLOAD COPY
+              </TraceButton>
+            </a>
+          </div>
+        </div>
+      )}
+
       {/* Upload Zone */}
       <div className="grid gap-3">
         <label
@@ -627,8 +749,8 @@ export function InvestigationView({ sessionId }: { sessionId?: string }) {
           actions={
             <div className="flex items-center gap-2">
               {ctx.isBackendConnected && (
-                <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] text-success border border-success/30 bg-success/10 px-1.5 py-0.5 rounded">
-                  PQC ENCLAVE ONLINE
+                <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[10px] text-success border border-success/30 bg-success/10 px-1.5 py-0.5 rounded shadow-[0_0_10px_rgba(34,197,94,0.15)]">
+                  <ShinyText text="PQC ENCLAVE ONLINE" className="text-success font-semibold" />
                 </span>
               )}
               <span className={cn(

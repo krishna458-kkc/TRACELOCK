@@ -34,7 +34,7 @@ def seed_demonstration_data():
         demo_recipients = [
             RecipientCreate(
                 recipient_id="RECIPIENT-021",
-                name="Dr. A. Sharma",
+                name="Lt. Col. S. Varma",
                 role="Senior Cryptographic Analyst / DRDO Cyber Cell"
             ),
             RecipientCreate(
@@ -44,34 +44,87 @@ def seed_demonstration_data():
             ),
             RecipientCreate(
                 recipient_id="RECIPIENT-063",
-                name="Col. V. Nair",
+                name="Dr. A. Raman",
                 role="Director of Special Operations / Joint Intelligence Command"
+            ),
+            RecipientCreate(
+                recipient_id="RECIPIENT-012",
+                name="S. Banerjee",
+                role="Deputy Director, Acquisitions / Acquisitions Wing"
+            ),
+            RecipientCreate(
+                recipient_id="RECIPIENT-023",
+                name="Maj. K. Rathore",
+                role="Field Operations Planner / Operations Directorate"
+            ),
+            RecipientCreate(
+                recipient_id="RECIPIENT-031",
+                name="Dr. P. Nair",
+                role="Senior Threat Analyst / Defence Cyber Agency"
+            ),
+            RecipientCreate(
+                recipient_id="RECIPIENT-058",
+                name="A. Kulkarni",
+                role="Legal Advisor / Office of the Judge Advocate General"
+            ),
+            RecipientCreate(
+                recipient_id="RECIPIENT-064",
+                name="V. Sharma",
+                role="Finance Controller / Defence Finance Division"
+            ),
+            RecipientCreate(
+                recipient_id="RECIPIENT-099",
+                name="Vice Admiral S. Rawat",
+                role="Vice Chief of Naval Staff / Naval HQ"
             ),
         ]
 
         for r in demo_recipients:
             rec_service.create_recipient(r)
 
-        # 2. Seed primary demo document DEFENCE_BRIEF_07.pdf (DOC-A71F) if missing
-        doc = db.query(DocumentDB).filter(DocumentDB.document_id == "DOC-A71F").first()
-        if not doc:
-            writer = PdfWriter()
-            writer.add_blank_page(width=612, height=792)
-            buf = io.BytesIO()
-            writer.write(buf)
-            pdf_bytes = buf.getvalue()
+        # 2. Seed prototype demo documents if missing
+        demo_docs = [
+            {
+                "id": "DOC-A71F",
+                "filename": "DEFENCE_BRIEF_07.pdf",
+                "recipients": ["RECIPIENT-021", "RECIPIENT-047", "RECIPIENT-063", "RECIPIENT-012", "RECIPIENT-023", "RECIPIENT-031", "RECIPIENT-058", "RECIPIENT-064", "RECIPIENT-099"]
+            },
+            {
+                "id": "DOC-B3E2",
+                "filename": "PROCUREMENT_REVIEW_Q3.pdf",
+                "recipients": ["RECIPIENT-012", "RECIPIENT-064", "RECIPIENT-031", "RECIPIENT-021", "RECIPIENT-047"]
+            },
+            {
+                "id": "DOC-C904",
+                "filename": "FIELD_OPS_DIRECTIVE.pdf",
+                "recipients": ["RECIPIENT-023", "RECIPIENT-047", "RECIPIENT-058", "RECIPIENT-064"]
+            },
+            {
+                "id": "DOC-D518",
+                "filename": "CYBER_INCIDENT_REPORT.pdf",
+                "recipients": ["RECIPIENT-031", "RECIPIENT-012", "RECIPIENT-047"]
+            },
+        ]
 
-            doc_service.upload_document(
-                filename="DEFENCE_BRIEF_07.pdf",
-                content=pdf_bytes,
-                document_id="DOC-A71F"
-            )
-            # Broadcast-encrypt for the 3 authorized recipients
-            doc_service.encrypt_and_distribute(
-                document_id="DOC-A71F",
-                recipient_ids=["RECIPIENT-021", "RECIPIENT-047", "RECIPIENT-063"]
-            )
-            logger.info("Successfully seeded demo document DOC-A71F (DEFENCE_BRIEF_07.pdf) with NIST PQC ML-KEM-768 broadcast encapsulation.")
+        for dd in demo_docs:
+            existing_doc = db.query(DocumentDB).filter(DocumentDB.document_id == dd["id"]).first()
+            if not existing_doc:
+                writer = PdfWriter()
+                writer.add_blank_page(width=612, height=792)
+                buf = io.BytesIO()
+                writer.write(buf)
+                pdf_bytes = buf.getvalue()
+
+                doc_service.upload_document(
+                    filename=dd["filename"],
+                    content=pdf_bytes,
+                    document_id=dd["id"]
+                )
+                doc_service.encrypt_and_distribute(
+                    document_id=dd["id"],
+                    recipient_ids=dd["recipients"]
+                )
+                logger.info(f"Successfully seeded demo document {dd['id']} ({dd['filename']}) with NIST PQC ML-KEM-768 broadcast encapsulation.")
 
     except Exception as e:
         logger.error(f"Error seeding demo data: {str(e)}")

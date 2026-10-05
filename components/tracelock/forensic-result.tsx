@@ -27,7 +27,7 @@ import { ALGORITHMS, type DecryptionSession, type LedgerRecord } from '@/lib/dat
 import { formatTs, groupHex, truncateHash } from '@/lib/format'
 import { useTracelock } from '@/lib/store'
 import { cn } from '@/lib/utils'
-import { Hash, StatusBadge, TraceButton, TraceCard } from './primitives'
+import { Hash, ShinyText, StatusBadge, TraceButton, TraceCard } from './primitives'
 import type { ApiInvestigationReport, ApiEvidenceHop } from '@/lib/api'
 
 export interface LeakedCopy {
@@ -191,11 +191,11 @@ export function ForensicResultCard({
                   id="attribution-heading"
                   className="font-mono text-base font-bold tracking-[0.16em] text-success"
                 >
-                  CRYPTOGRAPHICALLY VERIFIED
+                  <ShinyText text="CRYPTOGRAPHICALLY VERIFIED" className="text-success" />
                 </h2>
               </div>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Leaked copy definitively attributed via post-quantum digital signature &amp; immutable DLT ledger.
+                Uploaded evidence matches the recipient-bound watermark, signed decryption event, and immutable ledger record.
               </p>
             </div>
           </div>
@@ -207,11 +207,14 @@ export function ForensicResultCard({
         <div className="p-5 space-y-1">
           <dl className="divide-y divide-border/60">
             <div className="flex items-center justify-between py-2.5">
-              <dt className="label-caps">Attributed Recipient</dt>
+              <dt className="label-caps">Attributed Recipient Copy</dt>
               <dd className="text-right">
                 <p className="font-mono text-sm font-bold text-foreground">{recipientId}</p>
                 <p className="font-sans text-xs text-muted-foreground">
                   {recipientName} · {recipientRole}
+                </p>
+                <p className="font-mono text-[10px] text-primary/80 mt-0.5">
+                  Cryptographic attribution: identified recipient-bound copy associated with {recipientId}
                 </p>
               </dd>
             </div>

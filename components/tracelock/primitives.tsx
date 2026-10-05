@@ -91,22 +91,126 @@ export function Panel({
 
 export function StaggerText({ text, className }: { text: string; className?: string }) {
   const words = text.split(' ')
+  let charCounter = 0
   return (
     <span className={cn('inline-flex flex-wrap gap-x-1.5', className)}>
       {words.map((word, wordIndex) => (
         <span key={wordIndex} className="inline-block whitespace-nowrap">
-          {Array.from(word).map((char, charIndex) => (
-            <span
-              key={charIndex}
-              className="animate-stagger-char"
-              style={{ animationDelay: `${(wordIndex * 5 + charIndex) * 20}ms` }}
-            >
-              {char}
-            </span>
-          ))}
+          {Array.from(word).map((char) => {
+            const delay = charCounter * 32
+            charCounter += 1
+            return (
+              <span
+                key={charCounter}
+                className="animate-stagger-char"
+                style={{ animationDelay: `${delay}ms` }}
+              >
+                {char}
+              </span>
+            )
+          })}
         </span>
       ))}
     </span>
+  )
+}
+
+export function DecryptedText({
+  text,
+  speed = 35,
+  characters = '0123456789ABCDEF#%&*!',
+  className,
+}: {
+  text: string
+  speed?: number
+  characters?: string
+  className?: string
+}) {
+  const [displayText, setDisplayText] = useState(text)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setDisplayText(text)
+      return
+    }
+
+    let iteration = 0
+    const interval = setInterval(() => {
+      setDisplayText(
+        text
+          .split('')
+          .map((char, index) => {
+            if (char === ' ') return ' '
+            if (index < iteration) return text[index]
+            return characters[Math.floor(Math.random() * characters.length)]
+          })
+          .join('')
+      )
+
+      if (iteration >= text.length) {
+        clearInterval(interval)
+      }
+      iteration += 1
+    }, speed)
+
+    return () => clearInterval(interval)
+  }, [text, speed, characters])
+
+  return <span className={className}>{displayText}</span>
+}
+
+export function ShinyText({
+  text,
+  disabled = false,
+  speed = 3.5,
+  className,
+}: {
+  text: string
+  disabled?: boolean
+  speed?: number
+  className?: string
+}) {
+  return (
+    <span
+      className={cn('inline-block font-semibold', className)}
+      style={{
+        backgroundImage: 'linear-gradient(120deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.95) 50%, rgba(255, 255, 255, 0.2) 100%)',
+        backgroundSize: '200% 100%',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        animation: disabled ? 'none' : `shiny-text ${speed}s infinite linear`,
+      }}
+    >
+      {text}
+    </span>
+  )
+}
+
+export function BhaveshCard({
+  children,
+  className,
+  innerClassName,
+  tone = 'neon',
+  onClick,
+}: {
+  children: React.ReactNode
+  className?: string
+  innerClassName?: string
+  tone?: 'neon' | 'success' | 'danger'
+  onClick?: () => void
+}) {
+  const toneClass =
+    tone === 'success'
+      ? 'tracelock-bhavesh-card-success'
+      : tone === 'danger'
+        ? 'tracelock-bhavesh-card-danger'
+        : ''
+  return (
+    <div className={cn('tracelock-bhavesh-card', toneClass, className)} onClick={onClick}>
+      <div className={cn('relative z-10 w-full h-full p-4', innerClassName)}>
+        {children}
+      </div>
+    </div>
   )
 }
 

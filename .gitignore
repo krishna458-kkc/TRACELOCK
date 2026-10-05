@@ -25,3 +25,4 @@ __pycache__/
 htmlcov/
 *.log
 test_full_e2e_verification.py
+scratch/

@@ -7,7 +7,7 @@ import { EVENT_LABEL, hexFrom, LEDGER_NODES, type LedgerRecord } from '@/lib/dat
 import { formatTs, truncateHash } from '@/lib/format'
 import { useTracelock } from '@/lib/store'
 import { cn } from '@/lib/utils'
-import { DataTable, Field, Hash, Mono, PageHeader, Panel, StatusBadge, StatusDot, Td, Th, TraceButton } from './primitives'
+import { BhaveshCard, DataTable, Field, Hash, Mono, PageHeader, Panel, ShinyText, StatusBadge, StatusDot, Td, Th, TraceButton } from './primitives'
 
 function ChainBlock({
   record,
@@ -148,9 +148,11 @@ export function LedgerView({ initialHeight }: { initialHeight?: number }) {
 
             <div className="hidden sm:flex items-center gap-2 rounded-md border border-border bg-card px-3 py-2 font-mono text-xs">
               <StatusDot tone={tamperedHeight === null && (!backendAudit || backendAudit.is_valid) ? 'success' : 'danger'} />
-              {tamperedHeight === null && (!backendAudit || backendAudit.is_valid)
-                ? `TIP #${tip.height} · CHAIN INTACT`
-                : 'TAMPER ANOMALY DETECTED'}
+              {tamperedHeight === null && (!backendAudit || backendAudit.is_valid) ? (
+                <ShinyText text={`TIP #${tip.height} · CHAIN INTACT`} className="text-success font-semibold" />
+              ) : (
+                <span className="text-destructive font-bold">TAMPER ANOMALY DETECTED</span>
+              )}
             </div>
           </div>
         }
@@ -288,11 +290,17 @@ export function LedgerView({ initialHeight }: { initialHeight?: number }) {
 
         {/* Right 30%: Record Detail & Continuity */}
         <div className="flex flex-col gap-4">
-          <Panel
-            title={`Block #${selected.height}`}
-            description="Cryptographic attributes of selected record"
-            actions={
-              tamperedHeight === null ? (
+          <BhaveshCard
+            tone={tamperedHeight !== null && (selected.height === tamperedHeight || selected.height > tamperedHeight) ? 'danger' : 'neon'}
+            className="p-0 shadow-lg"
+            innerClassName="p-4 flex flex-col gap-3"
+          >
+            <div className="flex items-center justify-between border-b border-border/50 pb-2">
+              <div>
+                <p className="font-mono text-xs font-bold text-foreground">Block #{selected.height}</p>
+                <p className="text-[10px] text-muted-foreground">Cryptographic attributes of selected record</p>
+              </div>
+              {tamperedHeight === null ? (
                 <TraceButton
                   variant="outline"
                   size="sm"
@@ -302,9 +310,9 @@ export function LedgerView({ initialHeight }: { initialHeight?: number }) {
                 >
                   SIMULATE TAMPER
                 </TraceButton>
-              ) : null
-            }
-          >
+              ) : null}
+            </div>
+
             <div className="flex flex-col gap-3 text-xs">
               <div className="grid grid-cols-2 gap-2 pb-2 border-b border-border/50">
                 <div>
@@ -351,7 +359,7 @@ export function LedgerView({ initialHeight }: { initialHeight?: number }) {
                 <span className="font-mono font-semibold text-success">4 / 4 VALIDATOR IDENTITIES</span>
               </div>
             </div>
-          </Panel>
+          </BhaveshCard>
 
           {/* Hash Chain Continuity */}
           <Panel

@@ -5,7 +5,7 @@ import { CheckCircle2, ChevronRight, Lock, Shield, ShieldCheck, Terminal } from 
 import { ALGORITHMS, LEDGER_NODES } from '@/lib/data'
 import { formatTs } from '@/lib/format'
 import { useTracelock } from '@/lib/store'
-import { DataTable, GradientHoverCard, Mono, PageHeader, Panel, StatusBadge, StatusDot, Td, Th, TraceButton } from './primitives'
+import { DataTable, GradientHoverCard, Mono, PageHeader, Panel, ShinyText, StatusBadge, StatusDot, Td, Th, TraceButton } from './primitives'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 
 interface PillarData {
@@ -110,7 +110,7 @@ export function SecurityView() {
         actions={
           <div className="flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5 font-mono text-xs">
             <StatusDot pulse tone="success" />
-            <span>AIR-GAPPED · ENCLAVE ISOLATED</span>
+            <ShinyText text="AIR-GAPPED · ENCLAVE ISOLATED" className="text-foreground font-semibold" />
           </div>
         }
       />

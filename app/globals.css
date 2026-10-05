@@ -127,7 +127,7 @@
   }
 }
 
-/* TRACELOCK Uiverse-inspired Rotating Gradient Border (Card by bhaveshxrawat adapted) */
+/* TRACELOCK Uiverse-inspired Rotating Gradient Border (Card by bhaveshxrawat) */
 @keyframes rotBGimg {
   from {
     transform: rotate(0deg);
@@ -137,12 +137,91 @@
   }
 }
 
+/* Bhaveshxrawat Continuous Rotating Gradient Card */
+.tracelock-bhavesh-card {
+  position: relative;
+  border-radius: 14px;
+  background: #07182E;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.55), 0 0 10px rgba(0, 183, 255, 0.15);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  isolation: isolate;
+}
+
+.tracelock-bhavesh-card::before {
+  content: '';
+  position: absolute;
+  top: -65%;
+  left: -65%;
+  width: 230%;
+  height: 230%;
+  background-image: conic-gradient(
+    transparent,
+    rgb(0, 183, 255) 60deg,
+    rgb(255, 48, 255) 120deg,
+    transparent 180deg,
+    transparent 240deg,
+    rgb(0, 183, 255) 300deg,
+    rgb(255, 48, 255) 360deg
+  );
+  animation: rotBGimg 3.5s linear infinite;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.tracelock-bhavesh-card-success::before {
+  background-image: conic-gradient(
+    transparent,
+    rgb(34, 197, 94) 60deg,
+    rgb(0, 183, 255) 120deg,
+    transparent 180deg,
+    transparent 240deg,
+    rgb(34, 197, 94) 300deg,
+    rgb(0, 183, 255) 360deg
+  );
+}
+
+.tracelock-bhavesh-card-danger::before {
+  background-image: conic-gradient(
+    transparent,
+    rgb(239, 68, 68) 60deg,
+    rgb(245, 158, 11) 120deg,
+    transparent 180deg,
+    transparent 240deg,
+    rgb(239, 68, 68) 300deg,
+    rgb(245, 158, 11) 360deg
+  );
+}
+
+.tracelock-bhavesh-card::after {
+  content: '';
+  position: absolute;
+  inset: 2px;
+  background: #07182E;
+  border-radius: 12px;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.tracelock-bhavesh-card > * {
+  position: relative;
+  z-index: 2;
+}
+
+.tracelock-bhavesh-card:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 12px 30px -4px rgba(0, 0, 0, 0.65), 0 0 24px rgba(0, 183, 255, 0.38), 0 0 16px rgba(255, 48, 255, 0.28);
+}
+
 .tracelock-rotating-border {
   position: relative;
   overflow: hidden;
   border-radius: var(--radius-lg);
   padding: 1.5px;
   isolation: isolate;
+  background: #07182E;
 }
 
 .tracelock-rotating-border::before {
@@ -154,12 +233,14 @@
   height: 200%;
   background-image: conic-gradient(
     transparent,
-    transparent 120deg,
-    oklch(0.76 0.11 222) 180deg,
+    rgb(0, 183, 255) 60deg,
+    rgb(255, 48, 255) 120deg,
+    transparent 180deg,
     transparent 240deg,
-    transparent
+    rgb(0, 183, 255) 300deg,
+    rgb(255, 48, 255) 360deg
   );
-  animation: rotBGimg 6s linear infinite;
+  animation: rotBGimg 4s linear infinite;
   z-index: 0;
   pointer-events: none;
 }
@@ -167,40 +248,46 @@
 .tracelock-rotating-border-success::before {
   background-image: conic-gradient(
     transparent,
-    transparent 120deg,
-    oklch(0.76 0.14 158) 180deg,
+    rgb(34, 197, 94) 60deg,
+    rgb(0, 183, 255) 120deg,
+    transparent 180deg,
     transparent 240deg,
-    transparent
+    rgb(34, 197, 94) 300deg,
+    rgb(0, 183, 255) 360deg
   );
 }
 
 .tracelock-rotating-border-danger::before {
   background-image: conic-gradient(
     transparent,
-    transparent 120deg,
-    oklch(0.66 0.2 25) 180deg,
+    rgb(239, 68, 68) 60deg,
+    rgb(245, 158, 11) 120deg,
+    transparent 180deg,
     transparent 240deg,
-    transparent
+    rgb(239, 68, 68) 300deg,
+    rgb(245, 158, 11) 360deg
   );
 }
 
 .tracelock-rotating-border > .tracelock-rotating-inner {
   position: relative;
   z-index: 1;
-  background: var(--card);
+  background: #07182E;
   border-radius: calc(var(--radius-lg) - 1.5px);
   width: 100%;
   height: 100%;
 }
 
-/* Vengeance UI: Stagger Text Animation */
+/* React Bits / Vengeance UI: Refined Stagger Text with deliberate cadence */
 @keyframes staggerFadeIn {
   0% {
     opacity: 0;
-    transform: translateY(6px);
+    filter: blur(4px);
+    transform: translateY(8px);
   }
   100% {
     opacity: 1;
+    filter: blur(0px);
     transform: translateY(0);
   }
 }
@@ -208,7 +295,17 @@
 .animate-stagger-char {
   display: inline-block;
   opacity: 0;
-  animation: staggerFadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: staggerFadeIn 0.48s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* React Bits: Shiny Text sheen effect */
+@keyframes shiny-text {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
 }
 
 /* Uiverse Card Style B: Moving Blob Glass Card (adapted for tactical cyber UI) */

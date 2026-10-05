@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { FileLock2, Info, Send, Shield, Upload } from 'lucide-react'
+import { CheckCircle2, FileLock2, Info, Send, Shield, Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -232,7 +232,15 @@ function DocumentDetailDrawer({
 
 const CLASSIFICATIONS: Classification[] = ['TOP SECRET', 'SECRET', 'CONFIDENTIAL', 'RESTRICTED']
 
-function RegisterDocumentDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
+function RegisterDocumentDialog({
+  open,
+  onOpenChange,
+  onRegistered,
+}: {
+  open: boolean
+  onOpenChange: (o: boolean) => void
+  onRegistered?: (doc: SecureDocument) => void
+}) {
   const { registerDocument } = useTracelock()
   const [file, setFile] = useState<File | null>(null)
   const [hash, setHash] = useState<string | null>(null)
@@ -327,9 +335,10 @@ function RegisterDocumentDialog({ open, onOpenChange }: { open: boolean; onOpenC
               if (!file || !hash) return
               setLoading(true)
               try {
-                await registerDocument({ name: file.name, sizeBytes: file.size, hash, classification, file })
+                const created = await registerDocument({ name: file.name, sizeBytes: file.size, hash, classification, file })
                 onOpenChange(false)
                 reset()
+                onRegistered?.(created)
               } finally {
                 setLoading(false)
               }
@@ -355,79 +364,189 @@ export function DistributeDialog({
   const { recipients, distributeDocument } = useTracelock()
   const [selected, setSelected] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+  const [distributionResult, setDistributionResult] = useState<{ recipientIds: string[] } | null>(null)
 
   if (!doc) return null
 
   const eligible = recipients.filter((r) => r.authorization === 'AUTHORIZED' && !doc.recipients.includes(r.id))
 
+  function handleOpenChange(o: boolean) {
+    if (!o) {
+      setDistributionResult(null)
+      setSelected([])
+    }
+    onOpenChange(o)
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-lg border-border bg-card">
-        <DialogHeader>
-          <DialogTitle className="font-mono text-base font-bold">DISTRIBUTE SECURELY</DialogTitle>
-          <DialogDescription className="text-xs text-muted-foreground">
-            {doc.name} will have its AES-256-GCM content key encapsulated per selected recipient using {ALGORITHMS.kem}.
-          </DialogDescription>
-        </DialogHeader>
+        {distributionResult ? (
+          <div className="flex flex-col gap-4">
+            <DialogHeader>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="size-5 text-success" />
+                <DialogTitle className="font-mono text-base font-bold text-success">
+                  SECURE DISTRIBUTION COMPLETE
+                </DialogTitle>
+              </div>
+              <DialogDescription className="text-xs text-muted-foreground">
+                Document broadcast-encrypted once with AES-256-GCM. Content key encapsulated individually for each authorized recipient using NIST FIPS 203 ML-KEM-768.
+              </DialogDescription>
+            </DialogHeader>
 
-        {eligible.length === 0 ? (
-          <p className="rounded-md border border-border bg-background/60 p-3 font-mono text-xs text-muted-foreground">
-            All authorized recipients are already provisioned with access to this document.
-          </p>
+            <div className="rounded-lg border border-border/70 bg-background/50 p-3.5 space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-xs border-b border-border/40 pb-3">
+                <div>
+                  <span className="label-caps block text-[10px]">Document</span>
+                  <span className="font-mono font-semibold text-foreground truncate block">{doc.name}</span>
+                </div>
+                <div>
+                  <span className="label-caps block text-[10px]">Encrypted Payload</span>
+                  <span className="font-mono font-semibold text-foreground block">ONE SHARED ENCRYPTED DOCUMENT</span>
+                </div>
+                <div>
+                  <span className="label-caps block text-[10px]">Recipients</span>
+                  <span className="font-mono font-bold text-primary block">{distributionResult.recipientIds.length} AUTHORIZED</span>
+                </div>
+                <div>
+                  <span className="label-caps block text-[10px]">Distribution Model</span>
+                  <span className="font-mono text-xs text-foreground block">BROADCAST ENCRYPT + INDIVIDUAL DECRYPT</span>
+                </div>
+              </div>
+
+              <div>
+                <p className="label-caps text-[10px] mb-2">Recipient Authorization Status</p>
+                <ul className="flex max-h-48 flex-col divide-y divide-border/40 overflow-y-auto rounded-md border border-border/60 bg-card/60">
+                  {distributionResult.recipientIds.map((rid) => {
+                    const r = recipients.find((x) => x.id === rid)
+                    return (
+                      <li key={rid} className="flex items-center justify-between px-3 py-2 text-xs">
+                        <div className="min-w-0 flex-1">
+                          <span className="font-mono font-semibold text-foreground">{rid}</span>
+                          {r && <span className="text-muted-foreground text-[11px] ml-1.5 font-sans">· {r.name}</span>}
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-success/15 text-success border border-success/30 font-semibold">
+                            AUTHORIZED
+                          </span>
+                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-primary/15 text-primary border border-primary/30 font-semibold">
+                            READY
+                          </span>
+                        </div>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            </div>
+
+            <DialogFooter className="gap-2 sm:justify-between">
+              <TraceButton
+                variant="outline"
+                size="sm"
+                onClick={() => handleOpenChange(false)}
+              >
+                Close
+              </TraceButton>
+              <Link href={`/sessions?doc=${doc.id}`}>
+                <TraceButton variant="primary" size="sm" className="gap-1.5 font-mono text-xs">
+                  PROCEED TO DECRYPTION SESSIONS →
+                </TraceButton>
+              </Link>
+            </DialogFooter>
+          </div>
         ) : (
-          <ul className="flex max-h-64 flex-col divide-y divide-border overflow-y-auto rounded-md border border-border bg-background/40">
-            {eligible.map((r) => {
-              const checked = selected.includes(r.id)
-              return (
-                <li key={r.id}>
-                  <label className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-secondary/40">
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={() =>
-                        setSelected((s) => (checked ? s.filter((x) => x !== r.id) : [...s, r.id]))
-                      }
-                      className="size-4 accent-[var(--primary)]"
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-foreground">{r.name}</p>
-                      <p className="font-mono text-[10px] text-muted-foreground">
-                        {r.id} · {r.role}
-                      </p>
-                    </div>
-                    <span className="font-mono text-[10px] text-primary">{r.scope}</span>
-                  </label>
-                </li>
-              )
-            })}
-          </ul>
-        )}
+          <>
+            <DialogHeader>
+              <DialogTitle className="font-mono text-base font-bold">DISTRIBUTE SECURELY</DialogTitle>
+              <DialogDescription className="text-xs text-muted-foreground">
+                {doc.name} will have its AES-256-GCM content key encapsulated per selected recipient using {ALGORITHMS.kem}.
+              </DialogDescription>
+            </DialogHeader>
 
-        <DialogFooter className="gap-2">
-          <TraceButton variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            Cancel
-          </TraceButton>
-          <TraceButton
-            variant="primary"
-            size="sm"
-            disabled={selected.length === 0 || loading}
-            loading={loading}
-            onClick={async () => {
-              setLoading(true)
-              try {
-                await distributeDocument(doc.id, selected)
-                setSelected([])
-                onOpenChange(false)
-              } finally {
-                setLoading(false)
-              }
-            }}
-            className="gap-1.5 font-mono text-xs"
-          >
-            <Send className="size-3.5" />
-            DISTRIBUTE ({selected.length})
-          </TraceButton>
-        </DialogFooter>
+            {eligible.length === 0 ? (
+              <p className="rounded-md border border-border bg-background/60 p-3 font-mono text-xs text-muted-foreground">
+                All authorized recipients are already provisioned with access to this document.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between px-1">
+                  <span className="label-caps">Authorized Recipients ({eligible.length} Available)</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelected(eligible.map((r) => r.id))}
+                      className="font-mono text-[10.5px] text-primary hover:underline font-semibold"
+                    >
+                      Select All ({eligible.length})
+                    </button>
+                    <span className="text-muted-foreground/40 text-[10px]">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelected([])}
+                      className="font-mono text-[10.5px] text-muted-foreground hover:underline"
+                    >
+                      Deselect
+                    </button>
+                  </div>
+                </div>
+
+                <ul className="flex max-h-64 flex-col divide-y divide-border overflow-y-auto rounded-md border border-border bg-background/40">
+                  {eligible.map((r) => {
+                    const checked = selected.includes(r.id)
+                    return (
+                      <li key={r.id}>
+                        <label className="flex cursor-pointer items-center gap-3 px-3 py-2 hover:bg-secondary/40">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() =>
+                              setSelected((s) => (checked ? s.filter((x) => x !== r.id) : [...s, r.id]))
+                            }
+                            className="size-4 accent-[var(--primary)]"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs font-semibold text-foreground">{r.name}</p>
+                            <p className="font-mono text-[10px] text-muted-foreground">
+                              {r.id} · {r.role}
+                            </p>
+                          </div>
+                          <span className="font-mono text-[10px] text-primary">{r.scope}</span>
+                        </label>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2">
+              <TraceButton variant="outline" size="sm" onClick={() => handleOpenChange(false)}>
+                Cancel
+              </TraceButton>
+              <TraceButton
+                variant="primary"
+                size="sm"
+                disabled={selected.length === 0 || loading}
+                loading={loading}
+                onClick={async () => {
+                  setLoading(true)
+                  try {
+                    await distributeDocument(doc.id, selected)
+                    setDistributionResult({ recipientIds: [...selected] })
+                  } finally {
+                    setLoading(false)
+                  }
+                }}
+                className="gap-1.5 font-mono text-xs"
+              >
+                <Send className="size-3.5" />
+                DISTRIBUTE ({selected.length})
+              </TraceButton>
+            </DialogFooter>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )
@@ -454,7 +573,7 @@ export function DocumentsView() {
       />
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {documents.map((d) => (
+        {Array.from(new Map(documents.map((d) => [d.id, d])).values()).map((d) => (
           <DocumentCard
             key={d.id}
             doc={d}
@@ -464,7 +583,11 @@ export function DocumentsView() {
         ))}
       </div>
 
-      <RegisterDocumentDialog open={registerOpen} onOpenChange={setRegisterOpen} />
+      <RegisterDocumentDialog
+        open={registerOpen}
+        onOpenChange={setRegisterOpen}
+        onRegistered={(doc) => setDistributeTarget(doc)}
+      />
       <DistributeDialog
         doc={distributeTarget}
         open={!!distributeTarget}

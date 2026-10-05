@@ -305,7 +305,7 @@ export function RecipientsView({ initialOpen }: { initialOpen?: string }) {
             </tr>
           </thead>
           <tbody>
-            {recipients.map((r) => {
+            {Array.from(new Map(recipients.map((r) => [r.id, r])).values()).map((r) => {
               const last = sessions
                 .filter((s) => s.recipientId === r.id)
                 .sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0]

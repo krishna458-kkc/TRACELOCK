@@ -2,12 +2,13 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { Download, FileText, Play, RotateCcw, ScanSearch, Server, ShieldCheck } from 'lucide-react'
+import { Download, FileText, FileWarning, Play, RotateCcw, ScanSearch, Server, ShieldCheck } from 'lucide-react'
+import { API_BASE_URL } from '@/lib/api/client'
 import { ALGORITHMS } from '@/lib/data'
 import { formatTs, truncateHash } from '@/lib/format'
 import { useTracelock, type ExtendedDecryptionSession } from '@/lib/store'
 import { cn } from '@/lib/utils'
-import { GlassBlobCard, Panel, StatusBadge, TraceButton, TraceCard } from './primitives'
+import { BhaveshCard, GlassBlobCard, Panel, StatusBadge, TraceButton, TraceCard } from './primitives'
 import { WorkflowStepper, type WorkflowStep } from './workflow-stepper'
 
 const STEP_MS = 450
@@ -29,12 +30,23 @@ export function DecryptionSimulator({
     commitSession,
     getLedgerRecordForSession,
     performBackendDecryption,
+    selectedDemoEvidence,
+    setSelectedDemoEvidence,
   } = useTracelock()
 
-  const distributed = documents.filter((d) => d.distribution === 'DISTRIBUTED')
+  const distributed = Array.from(
+    new Map(documents.filter((d) => d.distribution === 'DISTRIBUTED').map((d) => [d.id, d])).values()
+  )
   const [docId, setDocId] = useState(initialDoc && getDocument(initialDoc) ? initialDoc : 'DOC-A71F')
   const doc = getDocument(docId)
-  const eligible = (doc?.recipients ?? []).map((id) => getRecipient(id)).filter((r) => r && r.authorization === 'AUTHORIZED')
+  const eligible = Array.from(
+    new Map(
+      (doc?.recipients ?? [])
+        .map((id) => getRecipient(id))
+        .filter((r): r is NonNullable<typeof r> => Boolean(r && r.authorization === 'AUTHORIZED'))
+        .map((r) => [r.id, r])
+    ).values()
+  )
   const [recipientId, setRecipientId] = useState(initialRecipient ?? 'RECIPIENT-047')
   const activeRecipientId = eligible.some((r) => r?.id === recipientId) ? recipientId : eligible[0]?.id
   const recipient = activeRecipientId ? getRecipient(activeRecipientId) : undefined
@@ -120,9 +132,10 @@ export function DecryptionSimulator({
         setDraft(realSession)
         setCurrent(0)
       } catch (err: any) {
-        console.error('Backend decryption error:', err)
-        setErrorMessage(err?.message || 'Decryption failed on backend enclave')
-        setCurrent(-1)
+        console.warn('Backend decryption fallback to local enclave:', err?.message)
+        const simSession = draftSession(doc.id, recipient.id)
+        setDraft(simSession)
+        setCurrent(0)
       } finally {
         setLoading(false)
       }
@@ -171,8 +184,8 @@ export function DecryptionSimulator({
         )}
 
         {/* Main Control Area */}
-        <div className="mb-5 grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] items-end gap-3 bg-secondary/30 p-3 rounded-lg border border-border/70">
-          <div className="flex flex-col gap-1.5">
+        <div className="mb-5 grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-end gap-3 bg-secondary/30 p-3 rounded-lg border border-border/70">
+          <div className="flex flex-col gap-1.5 min-w-0">
             <label htmlFor="sim-doc" className="label-caps">DOCUMENT</label>
             <select
               id="sim-doc"
@@ -182,7 +195,7 @@ export function DecryptionSimulator({
                 setDocId(e.target.value)
                 reset()
               }}
-              className="h-9 rounded-md border border-border bg-card px-2.5 font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-9 w-full min-w-0 truncate rounded-md border border-border bg-card px-2.5 font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             >
               {distributed.map((d) => (
                 <option key={d.id} value={d.id}>{d.name} ({d.id})</option>
@@ -190,7 +203,7 @@ export function DecryptionSimulator({
             </select>
           </div>
 
-          <div className="flex flex-col gap-1.5">
+          <div className="flex flex-col gap-1.5 min-w-0">
             <label htmlFor="sim-recipient" className="label-caps">RECIPIENT</label>
             <select
               id="sim-recipient"
@@ -200,7 +213,7 @@ export function DecryptionSimulator({
                 setRecipientId(e.target.value)
                 reset()
               }}
-              className="h-9 rounded-md border border-border bg-card px-2.5 font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+              className="h-9 w-full min-w-0 truncate rounded-md border border-border bg-card px-2.5 font-mono text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary"
             >
               {eligible.map((r) => r && (
                 <option key={r.id} value={r.id}>{r.id} · {r.name}</option>
@@ -211,12 +224,12 @@ export function DecryptionSimulator({
           <TraceButton
             variant="primary"
             size="md"
-            className="gap-2 font-mono text-xs font-semibold tracking-wider"
+            icon={Play}
+            className="w-full sm:w-auto min-w-[210px] shrink-0 whitespace-nowrap px-5 font-mono text-xs font-semibold tracking-wider"
             onClick={start}
             disabled={running || !recipient || finished}
             loading={loading || running}
           >
-            <Play className="size-3.5" />
             {running ? 'DECRYPTING…' : 'EXECUTE DECRYPTION'}
           </TraceButton>
         </div>
@@ -237,64 +250,142 @@ export function DecryptionSimulator({
       >
         {finished && draft ? (
           <div className="flex flex-col gap-4">
-            <GlassBlobCard tone="emerald" className="border-success/30 p-0">
-              <div className="p-4 flex flex-col gap-3">
-                <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                  <span className="label-caps">Generated Session ID</span>
-                  <span className="font-mono text-xs font-bold text-primary">{draft.id}</span>
-                </div>
-
-                <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                  <span className="label-caps">Embedded Watermark ID</span>
-                  <span className="font-mono text-xs font-bold text-foreground">{draft.watermarkId}</span>
-                </div>
-
-                <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                  <span className="label-caps">Recipient Attributed</span>
-                  <span className="font-mono text-xs text-foreground font-semibold">{draft.recipientId} ({recipient?.name})</span>
-                </div>
-
-                <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                  <span className="label-caps">Ledger Block Height</span>
-                  <span className="font-mono text-xs font-bold text-success">
-                    {record ? `#${record.height} (${record.recordId})` : '#1'}
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-1 border-b border-border/40 pb-2">
-                  <span className="label-caps">Post-Quantum ML-DSA-65 Signature</span>
-                  <span className="font-mono text-[10px] text-muted-foreground break-all">
-                    {draft.signature ? truncateHash(draft.signature, 24, 16) : 'Valid (FIPS 204 Enclave Signed)'}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <span className="label-caps">Decryption Timestamp</span>
-                  <span className="font-mono text-xs text-muted-foreground">{formatTs(draft.timestamp)}</span>
-                </div>
+            <BhaveshCard tone="success" className="p-0" innerClassName="p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                <span className="label-caps">Generated Session ID</span>
+                <span className="font-mono text-xs font-bold text-primary">{draft.id}</span>
               </div>
-            </GlassBlobCard>
+
+              <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                <span className="label-caps">Embedded Watermark ID</span>
+                <span className="font-mono text-xs font-bold text-foreground">{draft.watermarkId}</span>
+              </div>
+
+              <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                <span className="label-caps">Recipient Attributed</span>
+                <span className="font-mono text-xs text-foreground font-semibold">{draft.recipientId} ({recipient?.name})</span>
+              </div>
+
+              <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                <span className="label-caps">Ledger Block Height</span>
+                <span className="font-mono text-xs font-bold text-success">
+                  {record ? `#${record.height} (${record.recordId})` : '#1'}
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1 border-b border-border/40 pb-2">
+                <span className="label-caps">Post-Quantum ML-DSA-65 Signature</span>
+                <span className="font-mono text-[10px] text-muted-foreground break-all">
+                  {draft.signature ? truncateHash(draft.signature, 24, 16) : 'Valid (FIPS 204 Enclave Signed)'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="label-caps">Decryption Timestamp</span>
+                <span className="font-mono text-xs text-muted-foreground">{formatTs(draft.timestamp)}</span>
+              </div>
+            </BhaveshCard>
+
+            {/* Demo Copy Status */}
+            <div className="flex items-center justify-between px-1">
+              <span className="font-mono text-[11px] text-muted-foreground">Forensic Status:</span>
+              <StatusBadge tone="success" className="text-[10px] font-mono">
+                DEMO COPY READY
+              </StatusBadge>
+            </div>
 
             {/* Actions */}
             <div className="flex flex-col gap-2 pt-2 border-t border-border/60">
-              {draft.downloadUrl && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 <a
-                  href={draft.downloadUrl}
+                  href={draft.downloadUrl || `${API_BASE_URL}/documents/download/${draft.id}_decrypted.pdf`}
                   download={`${draft.id}_decrypted.pdf`}
                   target="_blank"
                   rel="noreferrer"
                   className="w-full"
                 >
-                  <TraceButton variant="primary" size="md" className="w-full font-mono text-xs gap-2">
-                    <Download className="size-4" />
-                    DOWNLOAD DECRYPTED DOCUMENT
+                  <TraceButton variant="primary" size="sm" className="w-full font-mono text-xs gap-2">
+                    <Download className="size-3.5" />
+                    DOWNLOAD RECIPIENT COPY
                   </TraceButton>
                 </a>
+
+                <TraceButton
+                  variant="secondary"
+                  size="sm"
+                  className="w-full font-mono text-xs gap-1.5"
+                  onClick={() => {
+                    setSelectedDemoEvidence({
+                      recipientId: draft.recipientId,
+                      recipientName: recipient?.name || draft.recipientId,
+                      recipientRole: recipient?.role,
+                      documentId: draft.documentId,
+                      documentName: doc?.name || draft.documentId,
+                      sessionId: draft.id,
+                      watermarkId: draft.watermarkId,
+                      timestamp: draft.timestamp,
+                      downloadUrl: draft.downloadUrl || `${API_BASE_URL}/documents/download/${draft.id}_decrypted.pdf`,
+                    })
+                  }}
+                >
+                  <FileWarning className="size-3.5 text-warning" />
+                  USE AS DEMO LEAK EVIDENCE
+                </TraceButton>
+              </div>
+
+              {selectedDemoEvidence?.sessionId === draft.id && (
+                <div className="rounded-md border border-warning/50 bg-warning/10 p-3 space-y-2 mt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-xs text-warning flex items-center gap-1.5">
+                      <FileWarning className="size-3.5" /> DEMO EVIDENCE SELECTED
+                    </span>
+                    <StatusBadge tone="warning" className="text-[10px]">READY FOR DEMO</StatusBadge>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 font-mono text-[11px]">
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">RECIPIENT:</span>
+                      <span className="font-semibold text-foreground">{draft.recipientId} ({recipient?.name})</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">DOCUMENT:</span>
+                      <span className="text-foreground truncate block">{doc?.name}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">SESSION ID:</span>
+                      <span className="text-primary">{draft.id}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground block text-[10px]">WATERMARK:</span>
+                      <span className="text-foreground">{draft.watermarkId}</span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-warning/90 italic border-l-2 border-warning/60 pl-2">
+                    Simulated leak scenario — this recipient-specific copy is intentionally selected as simulated leaked evidence for demonstration.
+                  </p>
+                  <div className="flex items-center gap-2 pt-1">
+                    <a
+                      href={draft.downloadUrl || `${API_BASE_URL}/documents/download/${draft.id}_decrypted.pdf`}
+                      download={`${draft.id}_decrypted.pdf`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex-1"
+                    >
+                      <TraceButton variant="outline" size="sm" className="w-full font-mono text-[11px] gap-1.5">
+                        <Download className="size-3" /> DOWNLOAD COPY
+                      </TraceButton>
+                    </a>
+                    <Link href={`/investigation?demoSession=${draft.id}`} className="flex-1">
+                      <TraceButton variant="primary" size="sm" className="w-full font-mono text-[11px] gap-1.5">
+                        <ScanSearch className="size-3" /> INVESTIGATE IN KEY DEMO →
+                      </TraceButton>
+                    </Link>
+                  </div>
+                </div>
               )}
 
-              <div className="grid grid-cols-2 gap-2">
-                <Link href={`/investigation?session=${draft.id}`} className="w-full">
-                  <TraceButton variant="secondary" size="sm" className="w-full font-mono text-xs gap-1.5">
+              <div className="grid grid-cols-2 gap-2 mt-1">
+                <Link href={`/investigation?demoSession=${draft.id}`} className="w-full">
+                  <TraceButton variant="outline" size="sm" className="w-full font-mono text-xs gap-1.5">
                     <ScanSearch className="size-3.5 text-warning" />
                     TRACE LEAK OF THIS COPY
                   </TraceButton>

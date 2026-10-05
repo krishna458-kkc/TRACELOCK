@@ -6,7 +6,7 @@ import { ArrowRight, ChevronRight, FileKey2, Lock, ScanSearch, ShieldCheck, X } 
 import { useTracelock } from '@/lib/store'
 import { formatTs, truncateHash } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import { DataTable, GlassBlobCard, GradientHoverCard, Hash, Mono, PageHeader, Panel, StatsCounter, StatusBadge, StatusDot, Td, Th, TraceButton, TraceCard } from './primitives'
+import { BhaveshCard, DataTable, DecryptedText, GlassBlobCard, GradientHoverCard, Hash, Mono, PageHeader, Panel, ShinyText, StatsCounter, StatusBadge, StatusDot, Td, Th, TraceButton, TraceCard } from './primitives'
 import { ALGORITHMS, type DecryptionSession } from '@/lib/data'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
@@ -24,22 +24,20 @@ function MetricCard({
   const numericValue = typeof value === 'number' ? value : parseInt(String(value), 10) || 0
   return (
     <Link href={href} className="group block h-full">
-      <div className="tracelock-gradient-card h-full">
-        <div className="tracelock-gradient-inner p-3.5 flex flex-col justify-between h-full bg-card/85">
-          <div className="flex items-center justify-between">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
-              {label}
-            </p>
-            <ArrowRight className="size-3 text-muted-foreground/60 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-primary" />
-          </div>
-          <div className="mt-2">
-            <p className="font-mono text-2xl font-bold tabular-nums text-foreground group-hover:text-primary transition-colors">
-              <StatsCounter value={numericValue} />
-            </p>
-            <p className="mt-0.5 font-mono text-[11px] text-muted-foreground truncate">{sub}</p>
-          </div>
+      <BhaveshCard className="h-full" innerClassName="p-3.5 flex flex-col justify-between h-full">
+        <div className="flex items-center justify-between">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground group-hover:text-primary transition-colors">
+            {label}
+          </p>
+          <ArrowRight className="size-3 text-muted-foreground/60 transition-transform duration-200 group-hover:translate-x-1 group-hover:text-primary" />
         </div>
-      </div>
+        <div className="mt-2">
+          <p className="font-mono text-2xl font-bold tabular-nums text-foreground group-hover:text-primary transition-colors">
+            <StatsCounter value={numericValue} />
+          </p>
+          <p className="mt-0.5 font-mono text-[11px] text-muted-foreground truncate">{sub}</p>
+        </div>
+      </BhaveshCard>
     </Link>
   )
 }
@@ -138,7 +136,9 @@ export function CommandCenter() {
   const { isBackendConnected, documents, recipients, sessions, ledger, investigations, getDocument, getRecipient, getLedgerRecordForSession } = useTracelock()
   const [selectedSession, setSelectedSession] = useState<DecryptionSession | null>(null)
 
-  const recent = [...sessions].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 6)
+  const recent = Array.from(
+    new Map([...sessions].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).map((s) => [s.id, s])).values()
+  ).slice(0, 6)
   const open = investigations.filter((i) => i.status === 'OPEN')
   const attributed = investigations.filter((i) => i.status === 'ATTRIBUTED')
   const tip = ledger[ledger.length - 1]
@@ -158,7 +158,7 @@ export function CommandCenter() {
             {isBackendConnected ? (
               <span className="hidden sm:inline-flex items-center gap-1.5 font-mono text-xs text-success border border-success/30 bg-success/10 px-2.5 py-1.5 rounded-md">
                 <span className="size-2 rounded-full bg-success animate-ping" />
-                PQC ENCLAVE ONLINE (127.0.0.1:8000)
+                <ShinyText text="PQC ENCLAVE ONLINE (127.0.0.1:8000)" className="text-success font-semibold" />
               </span>
             ) : (
               <span className="hidden sm:inline-flex items-center gap-1.5 font-mono text-xs text-muted-foreground border border-border bg-card px-2.5 py-1.5 rounded-md">

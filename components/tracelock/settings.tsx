@@ -1,6 +1,6 @@
 import { Lock, ShieldCheck, KeyRound, Database, Sliders } from 'lucide-react'
 import { ALGORITHMS, LEDGER_NODES } from '@/lib/data'
-import { Field, Mono, PageHeader, Panel, StatusBadge } from './primitives'
+import { Field, Mono, PageHeader, Panel, ShinyText, StatusBadge } from './primitives'
 
 const GROUPS = [
   {
@@ -56,7 +56,7 @@ export function SettingsView() {
         actions={
           <div className="flex items-center gap-2">
             <span className="flex items-center gap-1.5 rounded-md border border-primary/40 bg-primary/10 px-3 py-1 font-mono text-xs text-primary font-semibold">
-              <Lock className="size-3.5" /> ENCLAVE SEALED
+              <Lock className="size-3.5" /> <ShinyText text="ENCLAVE SEALED" className="text-primary font-semibold" />
             </span>
           </div>
         }

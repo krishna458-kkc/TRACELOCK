@@ -46,6 +46,18 @@ export interface ExtendedDecryptionSession extends DecryptionSession {
   ledgerRecordId?: number
 }
 
+export interface SelectedDemoEvidence {
+  sessionId: string
+  documentId: string
+  documentName: string
+  recipientId: string
+  recipientName: string
+  recipientRole?: string
+  watermarkId: string
+  timestamp: string
+  downloadUrl?: string
+}
+
 interface TracelockState {
   isBackendConnected: boolean
   backendHealth: HealthResponse | null
@@ -54,6 +66,8 @@ interface TracelockState {
   sessions: ExtendedDecryptionSession[]
   ledger: LedgerRecord[]
   investigations: Investigation[]
+  selectedDemoEvidence: SelectedDemoEvidence | null
+  setSelectedDemoEvidence: (evidence: SelectedDemoEvidence | null) => void
   getDocument: (id: string) => SecureDocument | undefined
   getRecipient: (id: string) => Recipient | undefined
   getSession: (id: string) => ExtendedDecryptionSession | undefined
@@ -88,6 +102,7 @@ export function TracelockProvider({ children }: { children: React.ReactNode }) {
   const [events, setEvents] = useState<LedgerEvent[]>(SEED_EVENTS)
   const [backendLedger, setBackendLedger] = useState<LedgerRecord[]>([])
   const [investigations, setInvestigations] = useState(SEED_INVESTIGATIONS)
+  const [selectedDemoEvidence, setSelectedDemoEvidence] = useState<SelectedDemoEvidence | null>(null)
 
   const computedLedger = useMemo(() => buildChain(events, documents), [events, documents])
   const ledger = useMemo(() => {
@@ -145,7 +160,12 @@ export function TracelockProvider({ children }: { children: React.ReactNode }) {
                   updated.push(recData)
                 }
               }
-              return updated
+              const seen = new Set<string>()
+              return updated.filter((r) => {
+                if (!r.id || seen.has(r.id)) return false
+                seen.add(r.id)
+                return true
+              })
             })
           }
         } catch {
@@ -178,7 +198,12 @@ export function TracelockProvider({ children }: { children: React.ReactNode }) {
                   updated.push(docData)
                 }
               }
-              return updated
+              const seen = new Set<string>()
+              return updated.filter((d) => {
+                if (!d.id || seen.has(d.id)) return false
+                seen.add(d.id)
+                return true
+              })
             })
           }
         } catch {
@@ -216,7 +241,12 @@ export function TracelockProvider({ children }: { children: React.ReactNode }) {
                   updated.unshift(sessData)
                 }
               }
-              return updated
+              const seen = new Set<string>()
+              return updated.filter((s) => {
+                if (!s.id || seen.has(s.id)) return false
+                seen.add(s.id)
+                return true
+              })
             })
           }
         } catch {
@@ -282,7 +312,7 @@ export function TracelockProvider({ children }: { children: React.ReactNode }) {
         distribution: 'NOT DISTRIBUTED',
         recipients: [],
       }
-      setDocuments((prev) => [doc, ...prev])
+      setDocuments((prev) => [doc, ...prev.filter((d) => d.id !== doc.id)])
       appendEvent({ type: 'DOCUMENT_REGISTERED', documentId: doc.id, signer: doc.originator, timestamp: doc.registered })
       return doc
     },
@@ -300,13 +330,19 @@ export function TracelockProvider({ children }: { children: React.ReactNode }) {
         }
       }
       let signer = 'Security Administration'
-      setDocuments((prev) =>
-        prev.map((d) => {
+      setDocuments((prev) => {
+        const updated = prev.map((d) => {
           if (d.id !== documentId) return d
           signer = d.originator
-          return { ...d, distribution: 'DISTRIBUTED', recipients: Array.from(new Set([...d.recipients, ...recipientIds])) }
-        }),
-      )
+          return { ...d, distribution: 'DISTRIBUTED' as const, recipients: Array.from(new Set([...d.recipients, ...recipientIds])) }
+        })
+        const seen = new Set<string>()
+        return updated.filter((d) => {
+          if (!d.id || seen.has(d.id)) return false
+          seen.add(d.id)
+          return true
+        })
+      })
       appendEvent({ type: 'DOCUMENT_DISTRIBUTED', documentId, signer })
     },
     [appendEvent, isBackendConnected, refreshBackendData],
@@ -501,6 +537,8 @@ export function TracelockProvider({ children }: { children: React.ReactNode }) {
       sessions,
       ledger,
       investigations,
+      selectedDemoEvidence,
+      setSelectedDemoEvidence,
       getDocument,
       getRecipient,
       getSession,
@@ -526,6 +564,8 @@ export function TracelockProvider({ children }: { children: React.ReactNode }) {
       sessions,
       ledger,
       investigations,
+      selectedDemoEvidence,
+      setSelectedDemoEvidence,
       getDocument,
       getRecipient,
       getSession,

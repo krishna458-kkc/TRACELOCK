@@ -5,7 +5,7 @@ import { ChevronRight, Key, KeyRound, Shield, ShieldAlert, ShieldCheck } from 'l
 import { ALGORITHMS, LEDGER_NODES, type Recipient } from '@/lib/data'
 import { formatDate, formatTs, truncateHash } from '@/lib/format'
 import { useTracelock } from '@/lib/store'
-import { DataTable, GlassBlobCard, Mono, PageHeader, Panel, StatusBadge, Td, Th, TraceButton } from './primitives'
+import { BhaveshCard, DataTable, GlassBlobCard, Mono, PageHeader, Panel, ShinyText, StatusBadge, Td, Th, TraceButton } from './primitives'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 
 const SYSTEM_KEYS = [
@@ -38,19 +38,23 @@ export function IdentityView() {
         description="Public verification keys for ML-DSA-65 and encapsulation targets for ML-KEM-768. Private signing keys are sealed within the prototype key vault."
       />
 
-      {/* Prototype Vault Architecture Notice */}
-      <div className="rounded-lg border border-primary/40 bg-primary/5 p-3 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
-        <div className="flex items-center gap-2">
-          <Key className="size-4 text-primary" />
-          <span className="font-bold text-foreground">KEY ARCHITECTURE:</span>
-          <span className="text-muted-foreground">
-            PROTOTYPE KEY VAULT (Local secure storage isolating NIST FIPS 203/204 keys)
-          </span>
+      {/* Primary Key Architecture Notice using BhaveshCard */}
+      <BhaveshCard tone="neon" className="p-0" innerClassName="p-3.5 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="grid size-7 place-items-center rounded border border-primary/40 bg-primary/10 text-primary">
+            <Key className="size-4" />
+          </div>
+          <div>
+            <span className="font-bold text-foreground">KEY ARCHITECTURE: </span>
+            <span className="text-muted-foreground">
+              PROTOTYPE KEY VAULT (Local secure storage isolating NIST FIPS 203/204 keys)
+            </span>
+          </div>
         </div>
-        <span className="text-[11px] font-semibold text-success">
-          ZERO PRIVATE KEYS EXPOSED OVER API
+        <span className="rounded border border-success/40 bg-success/15 px-2.5 py-1 text-[11px] font-semibold text-success shadow-[0_0_12px_rgba(34,197,94,0.2)]">
+          <ShinyText text="ZERO PRIVATE KEYS EXPOSED OVER API" className="text-success" />
         </span>
-      </div>
+      </BhaveshCard>
 
       {/* Summary Metrics using GlassBlobCard (Card Style B) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">

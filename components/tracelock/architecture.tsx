@@ -3,7 +3,7 @@
 import { ArrowDown, ArrowRight, CheckCircle2, Cpu, Database, Eye, FileText, Key, Lock, Network, ShieldCheck } from 'lucide-react'
 import { ALGORITHMS, LEDGER_NODES } from '@/lib/data'
 import { cn } from '@/lib/utils'
-import { DataTable, Mono, PageHeader, Panel, StatusBadge, Td, Th } from './primitives'
+import { DataTable, Mono, PageHeader, Panel, ShinyText, StatusBadge, Td, Th } from './primitives'
 
 const MAIN_PATH = [
   { step: '01', name: 'DOCUMENT SOURCE', spec: 'SHA3-256 Digest', desc: 'Ingested & digested in secure enclave' },
@@ -199,7 +199,9 @@ export function ArchitectureView() {
 
               <div className="rounded-md border border-border/80 bg-background/60 p-2.5">
                 <dt className="label-caps">Network Boundary</dt>
-                <dd className="mt-1 font-mono text-success font-semibold">Galvanic Air-Gap (Localhost Only)</dd>
+                <dd className="mt-1 font-mono text-success font-semibold">
+                  <ShinyText text="Galvanic Air-Gap (Localhost Only)" className="text-success font-semibold" />
+                </dd>
                 <dd className="text-[11px] text-muted-foreground">Zero external network calls, zero cloud KMS endpoints, zero public blockchain nodes.</dd>
               </div>
             </dl>
